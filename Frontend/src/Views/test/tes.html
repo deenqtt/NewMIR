@@ -1,0 +1,235 @@
+<template>
+  <div class="container">
+    <div v-if="showTable">
+      <button @click="showCreateForm" class="btn btn-primary mb-3">
+        Create Map
+      </button>
+      <h2>Maps List</h2>
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th scope="col">ID</th>
+            <th scope="col">Name</th>
+            <th scope="col">Site</th>
+            <th scope="col">Timestamp</th>
+            <th scope="col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="map in maps" :key="map.id">
+            <td>{{ map.id }}</td>
+            <td>{{ map.name }}</td>
+            <td>{{ map.site }}</td>
+            <td>{{ new Date(map.timestamp).toLocaleString() }}</td>
+            <td>
+              <button @click="deleteMap(map.id)" class="btn btn-danger">
+                Delete
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div v-if="showForm">
+      <h2>Create Map</h2>
+      <form @submit.prevent="saveMap">
+        <div class="mb-3">
+          <label for="name" class="form-label">Map Name</label>
+          <input
+            type="text"
+            class="form-control"
+            id="name"
+            v-model="mapDto.name"
+            required
+          />
+        </div>
+        <div class="mb-3">
+          <label for="site" class="form-label">Site Name</label>
+          <input
+            type="text"
+            class="form-control"
+            id="site"
+            v-model="mapDto.site"
+            required
+          />
+        </div>
+        <div class="mb-3">
+          <label for="mapCanvas" class="form-label">Map</label>
+          <canvas id="mapCanvas" width="700" height="700"></canvas>
+        </div>
+        <button type="button" @click="createMap" class="btn btn-primary">
+          Start Mapping
+        </button>
+        <button type="submit" class="btn btn-success">Save</button>
+        <button @click="cancelCreate" class="btn btn-secondary">Cancel</button>
+      </form>
+    </div>
+  </div>
+</template>
+
+<script setup>
+  import { ref, reactive, onMounted } from "vue";
+  import axios from "axios";
+  import Swal from "sweetalert2";
+
+  const maps = ref([]);
+  const mapDto = reactive({
+    name: "",
+    site: "",
+  });
+  const showTable = ref(true);
+  const showForm = ref(false);
+
+  const fetchMaps = async () => {
+    try {
+      const response = await axios.get("http://localhost:5258/maps");
+      maps.value = response.data;
+    } catch (error) {
+      console.error("Failed to fetch maps:", error);
+    }
+  };
+
+  const showCreateForm = () => {
+    showTable.value = false;
+    showForm.value = true;
+  };
+
+  const cancelCreate = () => {
+    showTable.value = true;
+    showForm.value = false;
+    resetForm();
+  };
+
+  const resetForm = () => {
+    mapDto.name = "";
+    mapDto.site = "";
+  };
+
+  const saveMap = async () => {
+    try {
+      const response = await axios.post(
+        "http://localhost:5258/maps/save",
+        mapDto
+      );
+      if (response.status === 200) {
+        fetchMaps();
+        cancelCreate();
+        Swal.fire("Success", "Map saved successfully", "success");
+      }
+    } catch (error) {
+      Swal.fire("Error", "Failed to save map", "error");
+      console.error("Failed to save map:", error);
+    }
+  };
+
+  const deleteMap = async (id) => {
+    try {
+      const result = await Swal.fire({
+        title: "Are you sure?",
+        text: "You won't be able to revert this!",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#3085d6",
+        cancelButtonColor: "#d33",
+        confirmButtonText: "Yes, delete it!",
+      });
+
+      if (result.isConfirmed) {
+        await axios.delete(`/maps/${id}`);
+        fetchMaps();
+        Swal.fire("Deleted!", "Your map has been deleted.", "success");
+      }
+    } catch (error) {
+      Swal.fire("Error", "Failed to delete map", "error");
+      console.error("Failed to delete map:", error);
+    }
+  };
+
+  const initializeMapCanvas = () => {
+    // Initialize ROS connection
+    const ros = new ROSLIB.Ros();
+    ros.connect("ws://localhost:9090");
+
+    const canvas = document.getElementById("mapCanvas");
+    const ctx = canvas.getContext("2d");
+
+    let mapData;
+    let mapWidth;
+    let mapHeight;
+    let mapResolution;
+    let mapOrigin;
+
+    // Function to render the map
+    const renderMap = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (mapData) {
+        for (let y = 0; y < mapHeight; y++) {
+          for (let x = 0; x < mapWidth; x++) {
+            const index = y * mapWidth + x;
+            const value = mapData[index];
+            let color;
+            if (value === -1) {
+              color = "#000"; // Black
+            } else if (value === 0) {
+              color = "#fff"; // White
+            } else if (value === 100) {
+              color = "#ccc"; // Grey
+            } else {
+              const grayscale = 255 - value * 2.55;
+              color = `rgb(${grayscale}, ${grayscale}, ${grayscale})`;
+            }
+            ctx.fillStyle = color;
+            ctx.fillRect(x * 5, y * 5, 5, 5);
+          }
+        }
+      }
+    };
+
+    // Subscribe to the map topic
+    const mapListener = new ROSLIB.Topic({
+      ros: ros,
+      name: "/map",
+      messageType: "nav_msgs/OccupancyGrid",
+    });
+
+    mapListener.subscribe((message) => {
+      mapData = message.data;
+      mapWidth = message.info.width;
+      mapHeight = message.info.height;
+      mapResolution = message.info.resolution;
+      mapOrigin = message.info.origin;
+
+      renderMap();
+    });
+  };
+
+  const createMap = () => {
+    fetch("http://127.0.0.1:5000/start_mapping")
+      .then((response) => {
+        if (response.ok) {
+          alert("Mapping process started.");
+        } else {
+          alert("Failed to start mapping process.");
+        }
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        alert("Error starting mapping process.");
+      });
+  };
+
+  onMounted(() => {
+    fetchMaps();
+    initializeMapCanvas();
+  });
+</script>
+
+<style>
+  #mapCanvas {
+    width: 100%;
+    height: 400px;
+    background: #f0f0f0;
+  }
+</style>
