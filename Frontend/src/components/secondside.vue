@@ -171,14 +171,14 @@
               </div>
             </div>
 
-            <div class="dropdown" id="joystick">
+            <div class="dropdown">
               <a
                 class="nav-link"
                 href="#"
                 id="joystickDropdown"
                 role="button"
                 :aria-expanded="dropdownOpen ? 'true' : 'false'"
-                @click="toggleDropdownJosytick"
+                @click="toggleDropdown"
               >
                 <span
                   class="fa-solid fa-gamepad"
@@ -189,60 +189,31 @@
               </a>
               <div
                 class="dropdown-menu"
-                aria-labelledby="joystickDropdown"
-                :class="{ show: dropdownOpen1 }"
-              ></div>
-            </div>
-
-            <!-- Elemen notifikasi -->
-            <li class="nav-item dropdown" id="notif">
-              <a
-                class="nav-link notif"
-                href="#"
-                id="notificationsDropdown"
-                role="button"
-                :aria-expanded="dropdownOpen ? 'true' : 'false'"
-                @click="toggleDropdown"
-              >
-                <div class="notification-container">
-                  <span
-                    class="fa-solid fa-bell"
-                    id="notificationIcon"
-                    data-toggle="tooltip"
-                    data-bs-placement="right"
-                    title="Notification"
-                    @click.stop="toggleDropdown"
-                  ></span>
-
-                  <!-- Menampilkan titik hijau hanya jika ada notifikasi yang belum dibaca -->
-                  <span
-                    class="notification-dot"
-                    v-if="hasUnreadNotifications && notifications.length > 0"
-                  ></span>
-                </div>
-              </a>
-              <div
-                class="dropdown-menu"
-                aria-labelledby="notificationsDropdown"
                 :class="{ show: dropdownOpen }"
+                style="margin-left: -80px; margin-top: 20px"
               >
-                <!-- Menampilkan notifikasi dari state Vuex -->
-                <a
-                  v-for="(notification, index) in notifications"
-                  :key="index"
-                  class="dropdown-item"
-                  href="#"
-                  @click="removeNotifications(index)"
-                >
-                  {{ notification }}
-                </a>
+                <div class="form-check form-switch">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    id="flexSwitchCheckDefault"
+                    v-model="joystickVisible"
+                    style="margin-left: 50px; margin-top: -20px"
+                  />
+                  <label class="form-check-label" for="flexSwitchCheckDefault"
+                    >Toggle Joystick</label
+                  >
+                </div>
               </div>
-            </li>
+            </div>
           </div>
         </ul>
       </div>
     </header>
-
+    <Joystick
+      v-if="joystickVisible"
+      style="position: absolute; margin-top: 400px; margin-left: 200px"
+    />
     <nav
       :style="{ width: is_expanded ? 'var(--sidebar-width)' : '30px' }"
       id="sidenav-5"
@@ -284,6 +255,8 @@ import axios from "axios";
 import { ref, watch, onMounted, toRefs, computed, reactive, toRaw } from "vue";
 import { useRouter } from "vue-router";
 import { useStore } from "vuex";
+import Joystick from "./Joystick.vue";
+
 import Swal from "sweetalert2";
 const showAlert = ref(false);
 const showTerminatedAlert = ref(false);
@@ -300,6 +273,7 @@ const selectedMission = ref(null);
 const selectedRobot = computed(() => store.state.selectedRobot);
 const hoveredNotif = ref(false);
 const dropdownOpen = ref(false);
+const joystickVisible = ref(false);
 const missions = ref([]); // List of missions
 const dropdownOpen1 = ref(false);
 const connected = ref(false);

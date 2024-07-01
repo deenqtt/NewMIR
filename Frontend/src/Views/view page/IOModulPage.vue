@@ -1,185 +1,162 @@
 <template>
-  <div>
-    <h3>Navigation Map</h3>
-    <select v-model="selectedMap" :disabled="loading || stopping">
-      <option v-for="map in maps" :key="map.id" :value="map.name">
-        {{ map.name }}
-      </option>
-    </select>
-    <button @click="launchMap" :disabled="loading || stopping">
-      Launch Map
-    </button>
-    <button @click="stopLaunch">Stop Launch</button>
-    <div id="nav" style="width: 660px; height: 550px"></div>
-    <button @click="initializeRobot">Initialize Robot</button>
-    <button @click="activateNavigation">Navigate</button>
+  <div class="container mx-auto">
+    <div class="mt-10">
+      <div class="max-width-5xl mx-auto">
+        <div class="flex flex-col">
+          <div class="flex justify-end mb-5">
+            <input
+              v-model="searchQuery"
+              type="text"
+              placeholder="Search..."
+              class="shadow border block border-gray-300 py-2 px-4 rounded-md text-sm font-medium"
+            />
+            <router-link
+              :to="{ name: 'barang.new' }"
+              class="shadow bg-blue-700 border block border-gray-300 text-white py-2 px-4 rounded-md text-sm font-medium ml-2"
+            >
+              Add Item
+            </router-link>
+          </div>
+          <div class="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+            <div
+              class="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8"
+            >
+              <div
+                class="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg"
+              >
+                <table class="min-w-full divide-y divide-gray-200">
+                  <thead class="bg-gray-50">
+                    <tr>
+                      <th
+                        scope="col"
+                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        Nama
+                      </th>
+                      <th
+                        scope="col"
+                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        Berat
+                      </th>
+                      <th
+                        scope="col"
+                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        Stock
+                      </th>
+                      <th scope="col" class="relative px-6 py-3">
+                        <span class="sr-only">Edit</span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody class="bg-white divide-y divide-gray-200">
+                    <tr
+                      v-for="(barang, index) in filteredBarangs"
+                      :key="barang.id"
+                    >
+                      <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">
+                          {{ barang.nama }}
+                        </div>
+                        <div class="text-sm text-gray-500">
+                          {{ barang.category }}
+                        </div>
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">
+                          {{ barang.berat }} Kg
+                        </div>
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">
+                          {{ barang.stok }}
+                        </div>
+                      </td>
+                      <td
+                        class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"
+                      >
+                        <a
+                          href="#"
+                          @click.prevent="_toEditBarang(index)"
+                          class="text-indigo-600 hover:text-indigo-900"
+                          >Edit</a
+                        >
+                        |
+                        <a
+                          href="#"
+                          @click.prevent="_deleteBarang(barang.id)"
+                          class="text-indigo-600 hover:text-indigo-900"
+                          >Hapus</a
+                        >
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useStore } from "vuex";
-import axios from "axios";
-import ROSLIB from "roslib";
+import { useRouter } from "vue-router";
 
-// Vuex Store
 const store = useStore();
-const robots = computed(() => store.state.robots);
-const connectedRobots = computed(() => store.state.connectedRobots);
+const router = useRouter();
+const barangs = computed(() => store.state.barang.barangs);
+const searchQuery = ref("");
 
-// States
-const ws = ref(null);
-const viewer = ref(null);
-const navClient = ref(null);
-const navigatorInstance = ref(null);
-const maps = ref([]);
-const selectedMap = ref(null);
-const loading = ref(false);
-const stopping = ref(false);
-
-// Methods
-const fetchMaps = async () => {
-  try {
-    const response = await axios.get("http://localhost:5258/maps");
-    maps.value = response.data;
-    console.log("Fetched maps:", maps.value);
-  } catch (error) {
-    console.error("Error fetching maps:", error);
-  }
-};
-
-const initConnection = () => {
-  // Check if there is any connected robot
-  const connectedRobot = robots.value.find(
-    (robot) => connectedRobots.value[robot.id]
-  );
-  if (connectedRobot) {
-    ws.value = new WebSocket(
-      `ws://${connectedRobot.ip}:${connectedRobot.port}`
+const filteredBarangs = computed(() => {
+  if (!searchQuery.value) return barangs.value;
+  return barangs.value.filter((barang) => {
+    const query = searchQuery.value.toLowerCase();
+    return (
+      barang.nama.toLowerCase().includes(query) ||
+      barang.category.toLowerCase().includes(query) ||
+      barang.berat.toString().toLowerCase().includes(query) ||
+      barang.stok.toString().toLowerCase().includes(query)
     );
+  });
+});
 
-    ws.value.onopen = () => {
-      console.log("WebSocket connection established");
-      mapView(connectedRobot); // Pass the connectedRobot to the mapView function
-    };
-
-    ws.value.onclose = () => {
-      console.log("Connection closed");
-      setTimeout(initConnection, 5000);
-    };
-
-    ws.value.onerror = (error) => {
-      console.log("WebSocket error: ", error);
-      setTimeout(initConnection, 5000);
-    };
+const _getAllBarang = async () => {
+  try {
+    await store.dispatch("barang/getAllBarang");
+  } catch (e) {
+    console.error(e);
   }
 };
 
-const mapView = (connectedRobot) => {
-  if (ws.value && ws.value.readyState === WebSocket.OPEN) {
-    const navElement = document.getElementById("nav");
-    if (!navElement) {
-      console.error("Element with ID 'nav' not found in DOM.");
-      return;
-    }
-
-    viewer.value = new ROS2D.Viewer({
-      divID: "nav",
-      width: 660,
-      height: 550,
-    });
-
-    // Initialize the map viewer
-    navClient.value = new NAV2D.OccupancyGridClientNav({
-      ros: new ROSLIB.Ros({
-        url: `ws://${connectedRobot.ip}:${connectedRobot.port}`,
-      }),
-      rootObject: viewer.value.scene,
-      viewer: viewer.value,
-      serverName: "/navigate_to_pose",
-      topic: "/map",
-    });
-
-    // Initialize the Navigator
-    navigatorInstance.value = new NAV2D.Navigator({
-      ros: new ROSLIB.Ros({
-        url: `ws://${connectedRobot.ip}:${connectedRobot.port}`,
-      }),
-      rootObject: viewer.value.scene,
-      viewer: viewer.value,
-      serverName: "/navigate_to_pose",
-      withOrientation: true,
-    });
-
-    console.log("Nav setup complete");
-  }
+const _toEditBarang = (index) => {
+  store.commit("barang/_assign_barang_form", barangs.value[index]);
+  router.push({ name: "barang.update" });
 };
 
-const launchMap = async () => {
-  if (!selectedMap.value) {
-    alert("Please select a map");
-    return;
+const _deleteBarang = async (id) => {
+  if (!confirm("Barang ini ingin dihapus?")) {
+    return false;
   }
   try {
-    loading.value = true;
-    const formData = new FormData();
-    formData.append("mapName", selectedMap.value);
-    const response = await axios.post(
-      "http://localhost:5258/maps/launch",
-      formData
-    );
-    alert(response.data);
-    // Pass the connectedRobot to the mapView function
-    const connectedRobot = robots.value.find(
-      (robot) => connectedRobots.value[robot.id]
-    );
-    if (connectedRobot) {
-      mapView(connectedRobot);
-    }
-  } catch (error) {
-    console.error("Error launching map:", error);
-  } finally {
-    loading.value = false;
+    await store.dispatch("barang/deleteBarang", id);
+    _getAllBarang();
+  } catch (e) {
+    console.error(e);
   }
 };
 
-const stopLaunch = async () => {
-  stopping.value = true; // Set variabel stopping menjadi true untuk menandai bahwa proses penghentian sedang berlangsung
-  try {
-    // Kirim permintaan untuk menghentikan proses peluncuran map yang sedang berlangsung
-    const response = await axios.post("http://localhost:5258/maps/stop");
-    alert(response.data);
-  } catch (error) {
-    console.error("Error stopping map launch:", error);
-  } finally {
-    stopping.value = false; // Set variabel stopping kembali ke false setelah proses penghentian selesai atau gagal
-  }
-};
-
-// Event handler untuk tombol Initialize Robot
-const initializeRobot = () => {
-  if (navigatorInstance.value && navigatorInstance.value.initializeRobotMode) {
-    navigatorInstance.value.initializeRobotMode();
-  } else {
-    console.error("NAV2D.Navigator belum diinisialisasi");
-  }
-};
-
-const activateNavigation = () => {
-  if (navigatorInstance.value && navigatorInstance.value.navigateMode) {
-    navigatorInstance.value.navigateMode();
-  } else {
-    console.error("NAV2D.Navigator belum diinisialisasi");
-  }
-};
-
-// Lifecycle Hooks
 onMounted(() => {
-  initConnection();
-  fetchMaps();
+  _getAllBarang();
 });
 </script>
 
-<style scoped>
-/* Add any specific styles if needed */
+<style>
+.button {
+  width: 90px;
+}
 </style>

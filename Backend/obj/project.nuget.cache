@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "xjrC+z2H1Ly4jdpHdcMJdyXsHnyvMgZpgb0NBMnbczyFI7pYzTJJj5mnevYFURJsQ9s5oP4cT9UZJ2L7p3lpOg==",
+  "dgSpecHash": "BWdyTijO+4C0bLX8ETCXA1GLXkzMTtiup1qRnxFFnJZvu9/tq1zyJstHpHg+LC9HoBBYqIvMttZgg1P1CKu5GQ==",
   "success": true,
-  "projectFilePath": "/home/wedman/Documents/MIR/Backend/Backend.csproj",
+  "projectFilePath": "/home/wedman/Documents/NewMIR/Backend/Backend.csproj",
   "expectedPackageFiles": [
     "/home/wedman/.nuget/packages/bcrypt.net-next/4.0.3/bcrypt.net-next.4.0.3.nupkg.sha512",
     "/home/wedman/.nuget/packages/humanizer.core/2.14.1/humanizer.core.2.14.1.nupkg.sha512",

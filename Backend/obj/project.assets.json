@@ -10207,11 +10207,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/home/wedman/Documents/MIR/Backend/Backend.csproj",
+      "projectUniqueName": "/home/wedman/Documents/NewMIR/Backend/Backend.csproj",
       "projectName": "Backend",
-      "projectPath": "/home/wedman/Documents/MIR/Backend/Backend.csproj",
+      "projectPath": "/home/wedman/Documents/NewMIR/Backend/Backend.csproj",
       "packagesPath": "/home/wedman/.nuget/packages/",
-      "outputPath": "/home/wedman/Documents/MIR/Backend/obj/",
+      "outputPath": "/home/wedman/Documents/NewMIR/Backend/obj/",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "/home/wedman/.nuget/NuGet/NuGet.Config"

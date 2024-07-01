@@ -20,7 +20,7 @@ import Battery from "../Views/setting/batterypage.vue";
 import ErrorHand from "../Views/setting/errorhandling.vue";
 import Docking from "../Views/setting/docking.vue";
 import MQTT from "../Views/setting/MQTT.vue";
-import Cek from "../Views/view page/test.vue";
+import Cek from "../components/Joystick.vue";
 
 const router = createRouter({
   history: createWebHistory(),
