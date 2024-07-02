@@ -18,7 +18,7 @@ const linearSpeed = ref(0);
 const angularSpeed = ref(0);
 let ros = null;
 let cmdVelTopic = null;
-let maxSpeed = ref(0.2);
+let maxSpeed = ref(0.5);
 let maxTurn = ref(1.0);
 
 // Initialize WebSocket connection to listen for speed updates

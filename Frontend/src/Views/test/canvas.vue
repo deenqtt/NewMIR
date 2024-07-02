@@ -35,24 +35,6 @@ import { ref } from "vue";
 const linearSpeed = ref(1.0);
 const angularSpeed = ref(1.0);
 
-const setSpeed = () => {
-  // Send the new speed settings to the backend
-  if (ws && ws.readyState === WebSocket.OPEN) {
-    ws.send(
-      JSON.stringify({
-        type: "set_speed",
-        maxSpeed: linearSpeed.value,
-        maxTurn: angularSpeed.value,
-      })
-    );
-    console.log("Sent speed settings to server:", {
-      maxSpeed: linearSpeed.value,
-      maxTurn: angularSpeed.value,
-    });
-  }
-};
-
-// Initialize WebSocket connection
 const ws = new WebSocket("ws://localhost:3000");
 
 ws.onopen = () => {
@@ -65,6 +47,19 @@ ws.onmessage = (message) => {
 
 ws.onclose = () => {
   console.log("WebSocket connection closed");
+};
+
+const setSpeed = () => {
+  // Send the new speed settings to the backend
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(
+      JSON.stringify({
+        type: "set_speed",
+        maxSpeed: linearSpeed.value,
+        maxTurn: angularSpeed.value,
+      })
+    );
+  }
 };
 </script>
 
