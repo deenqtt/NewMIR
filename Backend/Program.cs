@@ -752,40 +752,182 @@ app.MapGet("/maps/pgm/{id}", async (int id, FullStackContext db) =>
     return Results.File(pgmBytes, "image/x-portable-graymap");
 });
 
-app.MapPost("/maps/update/{id}", async (int id, HttpContext context, FullStackContext db) =>
+app.MapPost("/maps/save-edited", async (HttpContext context, FullStackContext db) =>
 {
-    var map = await db.Maps.FindAsync(id);
+    var form = await context.Request.ReadFormAsync();
+    var mapId = form["mapId"].ToString();
+    var editedImage = form.Files["editedImage"];
+
+    if (string.IsNullOrEmpty(mapId) || editedImage == null)
+    {
+        return Results.BadRequest("Map ID and edited image are required.");
+    }
+
+    var map = await db.Maps.FindAsync(int.Parse(mapId));
     if (map == null)
     {
-        Console.WriteLine($"Map with ID {id} not found.");
         return Results.NotFound("Map not found.");
     }
 
-    var form = await context.Request.ReadFormAsync();
-    var file = form.Files["editedPgm"];
-    if (file == null)
+    var tempDirectory = Path.GetDirectoryName(map.PgmFilePath);
+    if (tempDirectory == null)
     {
-        Console.WriteLine("No file uploaded.");
-        return Results.BadRequest("No file uploaded.");
+        return Results.Problem("Invalid map file path.");
     }
-
-    var pgmFilePath = map.PgmFilePath;
 
     try
     {
-        using (var stream = new FileStream(pgmFilePath, FileMode.Create))
+        var editedImagePath = Path.Combine(tempDirectory, "edited.png");
+
+        // Save the uploaded edited image
+        await using (var stream = new FileStream(editedImagePath, FileMode.Create))
         {
-            await file.CopyToAsync(stream);
+            await editedImage.CopyToAsync(stream);
         }
-        Console.WriteLine($"Map ID {id} updated successfully at path: {pgmFilePath}");
-        return Results.Ok("Map updated successfully.");
+
+        // Convert the edited image to PGM format and replace the original PGM file
+        string convertCommand = $"convert {editedImagePath} {map.PgmFilePath}";
+        var convertProcess = new Process()
+        {
+            StartInfo = new ProcessStartInfo
+            {
+                FileName = "/bin/bash",
+                Arguments = $"-c \"{convertCommand}\"",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            }
+        };
+
+        convertProcess.Start();
+        string convertOutput = await convertProcess.StandardOutput.ReadToEndAsync();
+        string convertError = await convertProcess.StandardError.ReadToEndAsync();
+        await convertProcess.WaitForExitAsync();
+
+        if (convertProcess.ExitCode != 0)
+        {
+            throw new Exception($"Conversion failed with exit code {convertProcess.ExitCode}: {convertError}");
+        }
+
+        Console.WriteLine($"Conversion Output: {convertOutput}");
+
+        // Delete the temporary PNG file after conversion
+        if (System.IO.File.Exists(editedImagePath))
+        {
+            System.IO.File.Delete(editedImagePath);
+        }
+
+        return Results.Ok("Map edited successfully.");
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"Error updating map: {ex.Message}\n{ex.StackTrace}");
-        return Results.Problem("Failed to update map.");
+        Console.WriteLine($"Error: {ex.Message}\n{ex.StackTrace}");
+        return Results.Problem(ex.Message);
     }
 });
+
+// // Endpoint to save map files
+app.MapPost("/maps/save", async (MapDto mapDto, FullStackContext db) =>
+{
+    string tempDirectory = "./temp"; // Use a directory in the project folder
+    if (!Directory.Exists(tempDirectory))
+    {
+        Directory.CreateDirectory(tempDirectory);
+    }
+
+    // Sanitize the name to avoid any illegal characters in the file system
+    string sanitizedMapName = string.Concat(mapDto.Name.Split(Path.GetInvalidFileNameChars()));
+    string mapsDirectory = Path.Combine(tempDirectory, sanitizedMapName);
+    if (!Directory.Exists(mapsDirectory))
+    {
+        try
+        {
+            Directory.CreateDirectory(mapsDirectory);
+            Console.WriteLine($"Created directory: {mapsDirectory}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to create directory: {mapsDirectory}");
+            Console.WriteLine($"Error: {ex.Message}\n{ex.StackTrace}");
+            return Results.Problem("Failed to create directory for saving map files.");
+        }
+    }
+
+    string pgmFilePath = Path.Combine(mapsDirectory, $"{sanitizedMapName}.pgm");
+    string yamlFilePath = Path.Combine(mapsDirectory, $"{sanitizedMapName}.yaml");
+
+    // Ensure the ROS2 command uses the correct path
+    string command = $"ros2 run nav2_map_server map_saver_cli -f {Path.Combine(mapsDirectory, sanitizedMapName)}";
+
+    try
+    {
+        var process = new Process()
+        {
+            StartInfo = new ProcessStartInfo
+            {
+                FileName = "/bin/bash",
+                Arguments = $"-c \"{command}\"",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            }
+        };
+
+        process.Start();
+        string output = await process.StandardOutput.ReadToEndAsync();
+        string error = await process.StandardError.ReadToEndAsync();
+        process.WaitForExit();
+
+        if (process.ExitCode != 0)
+        {
+            throw new Exception($"Command failed with exit code {process.ExitCode}: {error}");
+        }
+
+        Console.WriteLine($"Command Output: {output}");
+        Console.WriteLine($"PGM File Path: {pgmFilePath}");
+        Console.WriteLine($"YAML File Path: {yamlFilePath}");
+
+        if (!File.Exists(pgmFilePath) || !File.Exists(yamlFilePath))
+        {
+            throw new Exception("Failed to save map files.");
+        }
+
+        // Read file contents
+        byte[] pgmFileContent = await File.ReadAllBytesAsync(pgmFilePath);
+        byte[] yamlFileContent = await File.ReadAllBytesAsync(yamlFilePath);
+
+        var map = new Map
+        {
+            Name = mapDto.Name,
+            Site = mapDto.Site,
+            PgmFilePath = pgmFilePath,
+            YamlFilePath = yamlFilePath,
+            Timestamp = DateTime.Now
+        };
+
+        Console.WriteLine($"Map data read successfully.");
+
+        db.Maps.Add(map);
+        int saved = await db.SaveChangesAsync();
+        if (saved <= 0)
+        {
+            throw new Exception("Failed to save map to the database. No data saved.");
+        }
+
+        Console.WriteLine($"Map data saved to database successfully.");
+
+        return Results.Ok(map);
+    }
+    catch (Exception ex)
+    {
+        // Log the exception message and stack trace
+        Console.WriteLine($"Error: {ex.Message}\n{ex.StackTrace}");
+        return Results.Problem(ex.Message);
+    }
+});
+
 
 app.MapPut("/maps/{id}", async (int id, Map mapUpdate, FullStackContext db) =>
 {
@@ -815,34 +957,29 @@ app.MapDelete("/maps/{id}", async (int id, FullStackContext db) =>
         return Results.NotFound();
     }
 
-    // Simpan path file sebelum dihapus
-    string pgmFilePath = map.PgmFilePath;
-    string yamlFilePath = map.YamlFilePath;
+    // Simpan path folder sebelum dihapus
+    string folderPath = Path.GetDirectoryName(map.PgmFilePath);
 
     // Hapus map dari database
     db.Maps.Remove(map);
     await db.SaveChangesAsync();
 
-    // Hapus file dari direktori temp jika ada
+    // Hapus folder dari direktori temp jika ada
     try
     {
-        if (File.Exists(pgmFilePath))
+        if (Directory.Exists(folderPath))
         {
-            File.Delete(pgmFilePath);
-        }
-        if (File.Exists(yamlFilePath))
-        {
-            File.Delete(yamlFilePath);
+            Directory.Delete(folderPath, true);
         }
 
-        Console.WriteLine($"Deleted map files from temp directory: {pgmFilePath}, {yamlFilePath}");
+        Console.WriteLine($"Deleted map folder from temp directory: {folderPath}");
     }
     catch (Exception ex)
     {
-        // Jika gagal menghapus file, log pesan kesalahan
-        Console.WriteLine($"Failed to delete map files from temp directory: {ex.Message}\n{ex.StackTrace}");
+        // Jika gagal menghapus folder, log pesan kesalahan
+        Console.WriteLine($"Failed to delete map folder from temp directory: {ex.Message}\n{ex.StackTrace}");
         // Anda bisa mengembalikan Results.Problem() dengan pesan kesalahan yang sesuai
-        return Results.Problem("Failed to delete map files from temp directory.");
+        return Results.Problem("Failed to delete map folder from temp directory.");
     }
 
     // Jika berhasil, kembalikan NoContent()

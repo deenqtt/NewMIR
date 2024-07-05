@@ -67,16 +67,13 @@ const eraserSize = ref(5); // Ukuran penghapus
 
 const loadPGM = async () => {
   try {
-    console.log(`Fetching map with ID: ${route.params.id}`);
     const response = await axios.get(
       `http://localhost:5258/maps/pgm/${route.params.id}`,
       {
         responseType: "arraybuffer",
       }
     );
-    console.log("Response from server:", response);
     const pgmData = new Uint8Array(response.data);
-    console.log("PGM data length:", pgmData.length);
     renderPGM(pgmData);
   } catch (error) {
     console.error("Failed to load PGM file:", error);
@@ -88,26 +85,12 @@ const renderPGM = (pgmData) => {
     pgmData.indexOf(10, pgmData.indexOf(10, pgmData.indexOf(10, 0) + 1) + 1) +
     1;
   const header = new TextDecoder().decode(pgmData.subarray(0, headerEndIndex));
-  console.log("PGM header:", header);
-
   const [magicNumber, width, height, maxVal] = header.split(/\s+/);
-  console.log("Parsed values:", { magicNumber, width, height, maxVal });
-
   const imageData = pgmData.subarray(headerEndIndex);
+
   const widthInt = parseInt(width);
   const heightInt = parseInt(height);
   const maxValInt = parseInt(maxVal);
-
-  console.log("Parsed integers:", { widthInt, heightInt, maxValInt });
-
-  if (!isFinite(widthInt) || !isFinite(heightInt) || !isFinite(maxValInt)) {
-    console.error("Invalid PGM header values:", {
-      widthInt,
-      heightInt,
-      maxValInt,
-    });
-    return;
-  }
 
   const canvasElement = canvas.value;
   canvasElement.width = widthInt;
@@ -153,6 +136,27 @@ const draw = (event) => {
   context.value.fillRect(x - size / 2, y - size / 2, size, size);
 };
 
+const saveEdit = async () => {
+  try {
+    const editedImage = canvas.value.toDataURL("image/png");
+    const response = await axios.post(
+      `http://localhost:5258/maps/save-edited`,
+      {
+        mapId: route.params.id,
+        editedImage,
+      }
+    );
+
+    if (response.status === 200) {
+      Swal.fire("Success", "Map edited successfully", "success").then(() => {
+        router.push("/maps"); // Ganti dengan rute yang sesuai
+      });
+    }
+  } catch (error) {
+    console.error("Failed to save edited map:", error);
+  }
+};
+
 const confirmBack = () => {
   Swal.fire({
     title: "Are you sure?",
@@ -164,37 +168,9 @@ const confirmBack = () => {
     confirmButtonText: "Yes, go back!",
   }).then((result) => {
     if (result.isConfirmed) {
-      router.push("/"); // Ganti dengan rute yang sesuai
+      router.push("/maps"); // Ganti dengan rute yang sesuai
     }
   });
-};
-
-const saveEdit = async () => {
-  const canvasElement = canvas.value;
-  canvasElement.toBlob(async (blob) => {
-    const formData = new FormData();
-    formData.append("editedPgm", blob, "editedMap.pgm");
-
-    try {
-      const response = await axios.post(
-        `http://localhost:5258/maps/update/${route.params.id}`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-      if (response.status === 200) {
-        Swal.fire("Success", "Map saved successfully", "success");
-      } else {
-        Swal.fire("Error", "Failed to save map", "error");
-      }
-    } catch (error) {
-      console.error("Failed to save map:", error);
-      Swal.fire("Error", "Failed to save map", "error");
-    }
-  }, "image/x-portable-graymap");
 };
 
 onMounted(() => {
