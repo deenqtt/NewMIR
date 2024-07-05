@@ -228,12 +228,14 @@ import { ref, watch, onMounted, computed } from "vue";
 import axios from "axios";
 import { useStore } from "vuex";
 import Swal from "sweetalert2";
-const navContainer = ref(null);
 import { nextTick } from "vue";
+import ROSLIB from "roslib";
+const navContainer = ref(null);
 const nav = ref(null);
 const isFormCardExpanded = ref(true);
 const toggleFormCard = () =>
   (isFormCardExpanded.value = !isFormCardExpanded.value);
+
 const store = useStore();
 const robots = computed(() => store.state.robots);
 const connectedRobots = computed(() => store.state.connectedRobots);
@@ -295,11 +297,11 @@ const deleteMission = async (id) => {
     if (result.isConfirmed) {
       await axios.delete(`http://localhost:5258/missions/${id}`);
       fetchMissions();
-      Swal.fire("Deleted!", "Your map has been deleted.", "success");
+      Swal.fire("Deleted!", "Your mission has been deleted.", "success");
     }
   } catch (error) {
-    Swal.fire("Error", "Failed to delete map", "error");
-    console.error("Failed to delete map:", error);
+    Swal.fire("Error", "Failed to delete mission", "error");
+    console.error("Failed to delete mission:", error);
   }
 };
 
@@ -351,6 +353,7 @@ const cancelForm = () => {
     }
   });
 };
+
 const stopping = ref(false);
 const stopLaunch = async () => {
   stopping.value = true; // Set variabel stopping menjadi true untuk menandai bahwa proses penghentian sedang berlangsung
@@ -364,6 +367,7 @@ const stopLaunch = async () => {
     stopping.value = false; // Set variabel stopping kembali ke false setelah proses penghentian selesai atau gagal
   }
 };
+
 const launchMap = async () => {
   if (!selectedMap.value) {
     alert("Please select a map");
@@ -384,6 +388,7 @@ const launchMap = async () => {
     loading.value = false;
   }
 };
+
 const startSelectingPosition = (index) => {
   selectIndex.value = index;
 };
@@ -440,13 +445,27 @@ const createMission = async () => {
       "http://localhost:5258/missions",
       missionData
     );
-    if (response.status === 200) {
-      cancelForm();
-      Swal.fire("Success", "Path saved successfully!", "success");
-      // Reset form atau lakukan tindakan lain yang diperlukan setelah berhasil menyimpan
+    if (response.status === 201) {
+      Swal.fire({
+        title: "Success",
+        text: "Mission created successfully!",
+        icon: "success",
+        confirmButtonText: "OK",
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          cancelForm();
+          TampilTabel.value = true;
+          TampilForm.value = false;
+          resetForm();
+          await fetchMissions(); // Perbarui data setelah form disubmit
+        }
+      });
+    } else {
+      throw new Error("Failed to create mission");
     }
   } catch (error) {
     console.error("Error creating mission:", error);
+    Swal.fire("Error", "Failed to create mission", "error");
   }
 };
 
@@ -477,6 +496,38 @@ const initConnection = () => {
   }
 };
 
+const mapView = (connectedRobot) => {
+  if (ws.value && ws.value.readyState === WebSocket.OPEN) {
+    nextTick(() => {
+      const navElement = navContainer.value;
+      if (!navElement) {
+        console.error("Element with ID 'nav' not found in DOM.");
+        return;
+      }
+
+      viewer.value = new ROS2D.Viewer({
+        divID: "nav",
+        width: navElement.clientWidth,
+        height: 550,
+      });
+
+      nav.value = new NAV2D.OccupancyGridClientNav({
+        ros: new ROSLIB.Ros({
+          url: `ws://${connectedRobot.ip}:${connectedRobot.port}`,
+        }),
+        rootObject: viewer.value.scene,
+        viewer: viewer.value,
+        serverName: "/navigate_to_pose",
+        topic: "/map",
+        withOrientation: false,
+      });
+
+      viewer.value.scene.addEventListener("click", selectPosition);
+
+      console.log("Nav setup complete");
+    });
+  }
+};
 const resetForm = () => {
   mission.value = {
     name: "",
@@ -486,38 +537,6 @@ const resetForm = () => {
     ],
   };
 };
-
-const mapView = (connectedRobot) => {
-  if (ws.value && ws.value.readyState === WebSocket.OPEN) {
-    const navElement = document.getElementById("nav");
-    if (!navElement) {
-      console.error("Element with ID 'nav' not found in DOM.");
-      return;
-    }
-
-    viewer.value = new ROS2D.Viewer({
-      divID: "nav",
-      width: navContainer.value.clientWidth,
-      height: 550,
-    });
-
-    nav.value = new NAV2D.OccupancyGridClientNav({
-      ros: new ROSLIB.Ros({
-        url: `ws://${connectedRobot.ip}:${connectedRobot.port}`,
-      }),
-      rootObject: viewer.value.scene,
-      viewer: viewer.value,
-      serverName: "/navigate_to_pose",
-      topic: "/map",
-      withOrientation: false,
-    });
-
-    viewer.value.scene.addEventListener("click", selectPosition);
-
-    console.log("Nav setup complete");
-  }
-};
-
 onMounted(() => {
   const TampilTabell = localStorage.getItem("TampilTabel");
   const TampilFormm = localStorage.getItem("TampilForm");
@@ -533,6 +552,15 @@ onMounted(() => {
   tooltipTriggerList.map(function (tooltipTriggerEl) {
     return new bootstrap.Tooltip(tooltipTriggerEl);
   });
+});
+
+// Watchers to keep localStorage in sync with state
+watch(TampilTabel, (newValue) => {
+  localStorage.setItem("TampilTabel", JSON.stringify(newValue));
+});
+
+watch(TampilForm, (newValue) => {
+  localStorage.setItem("TampilForm", JSON.stringify(newValue));
 });
 </script>
 

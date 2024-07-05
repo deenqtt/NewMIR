@@ -1,154 +1,205 @@
 <template>
   <div class="container">
-    <h5>
-      Edit
-      <span>Map</span>
-    </h5>
-
-    <button @click="confirmBack" class="btn btn-light">Back</button>
-    <div class="card bg-light">
-      <div class="card-header">
-        <div class="d-flex justify-content-between align-items-center">
-          <div class="d-flex align-items-center">
-            <button class="material-symbols-outlined">open_with</button>
-            <div class="save-all-icon">
-              <button class="material-symbols-outlined">save</button>
-              <p>Save All</p>
-            </div>
-            <button class="nav-item dropdown" id="forbiddenZoneDropdown">
-              <a
-                class="nav-link dropdown-toggle"
-                href="#"
-                id="forbiddenZoneDropdownMenu"
-                role="button"
-                data-bs-toggle="dropdown"
-                aria-haspopup="true"
-                aria-expanded="false"
-              >
-                <button class="material-symbols-outlined">
-                  emergency_home
-                </button>
-              </a>
-              <div
-                class="dropdown-menu"
-                aria-labelledby="forbiddenZoneDropdownMenu"
-              >
-                <a class="dropdown-item" href="#" @click="changeIcon('tembok')"
-                  >Tembok</a
-                >
-                <a class="dropdown-item" href="#" @click="changeIcon('kaca')"
-                  >Kaca</a
-                >
-                <!-- Tambahkan opsi lain di sini sesuai kebutuhan -->
-              </div>
-            </button>
-          </div>
-          <div class="d-flex align-items-center">
-            <button class="material-symbols-outlined">zoom_in</button>
-            <button class="material-symbols-outlined">zoom_out</button>
-          </div>
+    <div class="d-flex align-items-center">
+      <h3>Edit Map</h3>
+      <button @click="confirmBack" class="btn btn-secondary ml-3">Back</button>
+      <button @click="saveEdit" class="btn btn-success ml-3">Save</button>
+    </div>
+    <div class="card bg-light mt-3">
+      <div
+        class="card-header d-flex justify-content-between align-items-center"
+      >
+        <div>
+          <button @click="setTool('draw')" class="btn btn-light">
+            <i class="fa-solid fa-pencil"></i>
+          </button>
+          <input
+            v-if="tool === 'draw'"
+            type="range"
+            v-model="penSize"
+            min="1"
+            max="10"
+            step="1"
+            class="ml-3"
+          />
+          <button @click="setTool('erase')" class="btn btn-light">
+            <i class="fa-solid fa-eraser"></i>
+          </button>
+          <input
+            v-if="tool === 'erase'"
+            type="range"
+            v-model="eraserSize"
+            min="1"
+            max="10"
+            step="1"
+            class="ml-3"
+          />
         </div>
       </div>
       <div class="card-body">
-        <canvas style="width: 100%"></canvas>
+        <canvas
+          ref="canvas"
+          @mousedown="startDrawing"
+          @mouseup="stopDrawing"
+          @mouseleave="stopDrawing"
+          @mousemove="draw"
+          style="border: 1px solid #ccc; width: 100%; height: auto"
+        ></canvas>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
+import { ref, onMounted } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import axios from "axios";
-import { onMounted, ref } from "vue";
-import router from "../../router";
 import Swal from "sweetalert2";
 
-const confirmBack = async () => {
-  const confirmMessage =
-    "Are you sure you want to go back? Any unsaved changes will be lost.";
-  const confirmed = await Swal.fire({
-    title: "Sure To Go Back?",
-    text: confirmMessage,
-    icon: "warning",
-    showCancelButton: true,
-    confirmButtonColor: "#d33",
-    cancelButtonColor: "#3085d6",
-    confirmButtonText: "Yes",
-    cancelButtonText: "No",
-  });
+const route = useRoute();
+const router = useRouter();
+const canvas = ref(null);
+const context = ref(null);
+const isDrawing = ref(false);
+const tool = ref("draw");
+const penSize = ref(2); // Ukuran pensil
+const eraserSize = ref(5); // Ukuran penghapus
 
-  if (confirmed.isConfirmed) {
-    router.go(-1); // Navigate back one step
+const loadPGM = async () => {
+  try {
+    console.log(`Fetching map with ID: ${route.params.id}`);
+    const response = await axios.get(
+      `http://localhost:5258/maps/pgm/${route.params.id}`,
+      {
+        responseType: "arraybuffer",
+      }
+    );
+    console.log("Response from server:", response);
+    const pgmData = new Uint8Array(response.data);
+    console.log("PGM data length:", pgmData.length);
+    renderPGM(pgmData);
+  } catch (error) {
+    console.error("Failed to load PGM file:", error);
   }
 };
+
+const renderPGM = (pgmData) => {
+  const headerEndIndex =
+    pgmData.indexOf(10, pgmData.indexOf(10, pgmData.indexOf(10, 0) + 1) + 1) +
+    1;
+  const header = new TextDecoder().decode(pgmData.subarray(0, headerEndIndex));
+  console.log("PGM header:", header);
+
+  const [magicNumber, width, height, maxVal] = header.split(/\s+/);
+  console.log("Parsed values:", { magicNumber, width, height, maxVal });
+
+  const imageData = pgmData.subarray(headerEndIndex);
+  const widthInt = parseInt(width);
+  const heightInt = parseInt(height);
+  const maxValInt = parseInt(maxVal);
+
+  console.log("Parsed integers:", { widthInt, heightInt, maxValInt });
+
+  if (!isFinite(widthInt) || !isFinite(heightInt) || !isFinite(maxValInt)) {
+    console.error("Invalid PGM header values:", {
+      widthInt,
+      heightInt,
+      maxValInt,
+    });
+    return;
+  }
+
+  const canvasElement = canvas.value;
+  canvasElement.width = widthInt;
+  canvasElement.height = heightInt;
+  context.value = canvasElement.getContext("2d");
+  const imageDataObject = context.value.createImageData(widthInt, heightInt);
+
+  for (let i = 0; i < imageData.length; i++) {
+    const pixelValue = (imageData[i] / maxValInt) * 255;
+    imageDataObject.data[i * 4] = pixelValue; // Red
+    imageDataObject.data[i * 4 + 1] = pixelValue; // Green
+    imageDataObject.data[i * 4 + 2] = pixelValue; // Blue
+    imageDataObject.data[i * 4 + 3] = 255; // Alpha
+  }
+
+  context.value.putImageData(imageDataObject, 0, 0);
+};
+
+const setTool = (selectedTool) => {
+  tool.value = selectedTool;
+};
+
+const startDrawing = (event) => {
+  isDrawing.value = true;
+  draw(event); // Start drawing immediately
+};
+
+const stopDrawing = () => {
+  isDrawing.value = false;
+};
+
+const draw = (event) => {
+  if (!isDrawing.value) return;
+
+  const rect = canvas.value.getBoundingClientRect();
+  const scaleX = canvas.value.width / rect.width;
+  const scaleY = canvas.value.height / rect.height;
+  const x = (event.clientX - rect.left) * scaleX;
+  const y = (event.clientY - rect.top) * scaleY;
+
+  context.value.fillStyle = tool.value === "draw" ? "black" : "white";
+  const size = tool.value === "draw" ? penSize.value : eraserSize.value;
+  context.value.fillRect(x - size / 2, y - size / 2, size, size);
+};
+
+const confirmBack = () => {
+  Swal.fire({
+    title: "Are you sure?",
+    text: "If you go back, all your changes will be lost.",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#3085d6",
+    cancelButtonColor: "#d33",
+    confirmButtonText: "Yes, go back!",
+  }).then((result) => {
+    if (result.isConfirmed) {
+      router.push("/"); // Ganti dengan rute yang sesuai
+    }
+  });
+};
+
+const saveEdit = async () => {
+  const canvasElement = canvas.value;
+  canvasElement.toBlob(async (blob) => {
+    const formData = new FormData();
+    formData.append("editedPgm", blob, "editedMap.pgm");
+
+    try {
+      const response = await axios.post(
+        `http://localhost:5258/maps/update/${route.params.id}`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+      if (response.status === 200) {
+        Swal.fire("Success", "Map saved successfully", "success");
+      } else {
+        Swal.fire("Error", "Failed to save map", "error");
+      }
+    } catch (error) {
+      console.error("Failed to save map:", error);
+      Swal.fire("Error", "Failed to save map", "error");
+    }
+  }, "image/x-portable-graymap");
+};
+
+onMounted(() => {
+  loadPGM();
+});
 </script>
 
-<style scoped>
-canvas {
-  border: #000 solid 1px;
-}
-.container {
-  font-family: "Poppins", sans-serif;
-  display: flex;
-  flex-direction: column;
-}
-
-h5 {
-  font-size: 25px;
-  font-weight: 700;
-  color: #0800ff;
-  margin-top: 20px;
-}
-
-span {
-  font-size: 25px;
-  font-weight: 500;
-  color: #000;
-  margin-left: -7px;
-}
-
-.btn {
-  text-align: center;
-  width: auto;
-  color: #000;
-  font-size: 12px;
-  font-weight: 600;
-  height: 30px;
-  align-self: flex-end;
-  margin-right: 40px;
-  margin-top: -10px;
-  margin-bottom: 10px;
-}
-
-.card {
-  margin-right: 40px;
-  box-shadow: 1px 2px 1px #000;
-  border-radius: 10px;
-}
-
-.card-header {
-  font-size: 15px;
-}
-
-.d-flex {
-  display: flex;
-}
-
-/* Margin untuk ikon dalam .d-flex */
-.d-flex > span {
-  margin-right: 10px;
-}
-
-.save-all-icon {
-  display: flex;
-  align-items: center;
-  margin-right: 20px;
-  margin-left: 20px;
-}
-.save-all-icon p {
-  margin-top: 17px;
-  margin-left: 10px;
-}
-button {
-  border: none;
-}
-</style>
+<style scoped></style>

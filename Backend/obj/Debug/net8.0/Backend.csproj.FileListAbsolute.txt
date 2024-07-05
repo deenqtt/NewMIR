@@ -1203,3 +1203,7 @@ C:/Users/deden/OneDrive/Documents/MIR/Backend/obj/Debug/net8.0/ref/Backend.dll
 /home/wedman/Documents/NewMIR/Backend/obj/Debug/net8.0/Backend.pdb
 /home/wedman/Documents/NewMIR/Backend/obj/Debug/net8.0/Backend.genruntimeconfig.cache
 /home/wedman/Documents/NewMIR/Backend/obj/Debug/net8.0/ref/Backend.dll
+/home/wedman/Documents/NewMIR/Backend/bin/Debug/net8.0/Microsoft.Win32.SystemEvents.dll
+/home/wedman/Documents/NewMIR/Backend/bin/Debug/net8.0/System.Drawing.Common.dll
+/home/wedman/Documents/NewMIR/Backend/bin/Debug/net8.0/runtimes/win/lib/net8.0/Microsoft.Win32.SystemEvents.dll
+/home/wedman/Documents/NewMIR/Backend/bin/Debug/net8.0/SixLabors.ImageSharp.dll

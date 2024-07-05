@@ -1,7 +1,6 @@
 const rclnodejs = require("rclnodejs");
 const WebSocket = require("ws");
-const fs = require("fs");
-
+const { exec } = require("child_process");
 const server = new WebSocket.Server({ port: 3000 });
 
 let initializePosition = null;
@@ -12,8 +11,6 @@ let currentMission = null;
 let continuePromiseResolve = null;
 let maxSpeed = 0.5;
 let maxTurn = 1.0;
-const paramFilePath =
-  "/opt/ros/humble/share/nav2_bringup/params/nav2_params.yaml"; // Update this path accordingly
 
 rclnodejs
   .init()
@@ -42,25 +39,11 @@ rclnodejs
           twist.angular.z = msg.angular * maxTurn;
           publisher.publish(twist);
         } else if (msg.type === "set_speed") {
-          maxSpeed = msg.maxSpeed;
-          maxTurn = msg.maxTurn;
+          maxSpeed = parseFloat(msg.maxSpeed);
+          maxTurn = parseFloat(msg.maxTurn);
           console.log("Updated max speed settings:", { maxSpeed, maxTurn });
 
-          // Update the YAML file with new speed settings
-          updateYAMLFile(maxSpeed, maxTurn);
-
-          // Broadcast new speed settings to all connected clients
-          server.clients.forEach((client) => {
-            if (client.readyState === WebSocket.OPEN) {
-              client.send(
-                JSON.stringify({
-                  type: "set_speed",
-                  maxSpeed: maxSpeed,
-                  maxTurn: maxTurn,
-                })
-              );
-            }
-          });
+          await updateParams(maxSpeed, maxTurn, ws);
         } else if (msg.type === "send_goal" && !isMissionInProgress) {
           console.log("Received goal:", msg.x, msg.y, msg.z);
           isPathInProgress = true;
@@ -333,31 +316,37 @@ rclnodejs
   .catch((err) => {
     console.error(err);
   });
-function updateYAMLFile(maxSpeed, maxTurn) {
-  fs.readFile(paramFilePath, "utf8", (err, data) => {
-    if (err) {
-      console.error("Error reading the YAML file:", err);
-      return;
-    }
 
-    let yamlContent = data;
-    yamlContent = yamlContent.replace(/vx_max: [\d.]+/, `vx_max: ${maxSpeed}`);
-    yamlContent = yamlContent.replace(/wz_max: [\d.]+/, `wz_max: ${maxTurn}`);
-    yamlContent = yamlContent.replace(
-      /max_velocity: \[.*?\]/,
-      `max_velocity: [${maxSpeed}, 0.0, ${maxTurn}]`
-    );
+async function updateParams(maxSpeed, maxTurn, ws) {
+  const commands = [
+    `ros2 param set /controller_server FollowPath.max_vel_x ${maxSpeed.toFixed(
+      2
+    )}`,
+    `ros2 param set /controller_server FollowPath.max_vel_theta ${maxTurn.toFixed(
+      2
+    )}`,
+    `ros2 param set /velocity_smoother max_velocity "[${maxSpeed.toFixed(
+      2
+    )}, 0.0, ${maxTurn.toFixed(2)}]"`,
+  ];
 
-    fs.writeFile(paramFilePath, yamlContent, "utf8", (err) => {
-      if (err) {
-        console.error("Error writing to the YAML file:", err);
-      } else {
-        console.log("YAML file updated successfully.");
-        // Optionally, restart the navigation stack to apply changes
+  for (const cmd of commands) {
+    exec(cmd, (error, stdout, stderr) => {
+      if (error) {
+        console.error(`Error updating parameter: ${error.message}`);
+        ws.send(JSON.stringify({ type: "update_error", error: error.message }));
+        return;
       }
+      if (stderr) {
+        console.error(`stderr: ${stderr}`);
+      }
+      console.log(`stdout: ${stdout}`);
     });
-  });
+  }
+
+  ws.send(JSON.stringify({ type: "params_updated", maxSpeed, maxTurn }));
 }
+
 async function waitForContinue() {
   return new Promise((resolve) => {
     continuePromiseResolve = resolve;

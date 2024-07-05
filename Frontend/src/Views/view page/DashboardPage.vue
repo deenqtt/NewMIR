@@ -152,6 +152,12 @@
           <span style="font-size: 12px; margin-left: -6px; color: #000"
             >Stop Map</span
           >
+          <span class="separator"></span>
+          <span
+            class="fa-solid fa-gear"
+            data-toggle="modal"
+            data-target="#exampleModalCenter"
+          ></span>
         </div>
 
         <div class="right-icons d-flex align-items-center">
@@ -175,13 +181,88 @@
 
       <div id="nav" ref="navContainer"></div>
     </div>
+
+    <!-- Modal -->
+    <div
+      class="modal fade"
+      id="exampleModalCenter"
+      tabindex="-1"
+      role="dialog"
+      aria-labelledby="exampleModalCenterTitle"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="exampleModalLongTitle">
+              Setting Speed
+            </h5>
+            <button
+              type="button"
+              class="close"
+              data-dismiss="modal"
+              aria-label="Close"
+            >
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="linear-speed">Linear Speed</label>
+              <input
+                type="range"
+                class="form-control-range"
+                id="linear-speed"
+                v-model="linearSpeed"
+                min="0"
+                max="2"
+                step="0.1"
+              />
+              <small class="form-text text-muted">
+                Current: {{ linearSpeed }}
+              </small>
+            </div>
+            <div class="form-group">
+              <label for="angular-speed">Angular Speed</label>
+              <input
+                type="range"
+                class="form-control-range"
+                id="angular-speed"
+                v-model="angularSpeed"
+                min="0"
+                max="2"
+                step="0.1"
+              />
+              <small class="form-text text-muted">
+                Current: {{ angularSpeed }}
+              </small>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-dismiss="modal"
+            >
+              Close
+            </button>
+            <button type="button" @click="setSpeed" class="btn btn-primary">
+              Set Speed
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 <script setup>
 import axios from "axios";
 import { useStore } from "vuex";
+import Swal from "sweetalert2";
 import { ref, onMounted, computed, watch, nextTick } from "vue";
 const store = useStore();
+const linearSpeed = ref(0.5);
+const angularSpeed = ref(1.0);
 const robots = computed(() => store.state.robots);
 const connectedRobots = computed(() => store.state.connectedRobots);
 const connected = ref(false);
@@ -324,6 +405,26 @@ const initConnection = () => {
       message.value = `Error: ${msg.error}`;
     }
   };
+  ws.value.onmessage = (message) => {
+    const data = JSON.parse(message.data);
+    if (data.type === "params_updated") {
+      Swal.fire("Success", "Speed parameters updated successfully!", "success");
+    } else if (data.type === "update_error") {
+      Swal.fire("Error", data.error, "error");
+    }
+  };
+};
+
+const setSpeed = () => {
+  if (ws.value && ws.value.readyState === WebSocket.OPEN) {
+    ws.value.send(
+      JSON.stringify({
+        type: "set_speed",
+        maxSpeed: linearSpeed.value,
+        maxTurn: angularSpeed.value,
+      })
+    );
+  }
 };
 
 const mapView = (connectedRobot) => {

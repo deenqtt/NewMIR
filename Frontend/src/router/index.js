@@ -157,12 +157,6 @@ const router = createRouter({
       component: MQTT,
       meta: { requiresAuth: true },
     },
-    {
-      path: "/Maps/Created/New",
-      Name: "New",
-      component: () => import("../Views/created page/createdMaps.vue"),
-      meta: { requiresAuth: true },
-    },
 
     {
       path: "/Mission/Created/New",
@@ -185,8 +179,8 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
-      path: "/edit-map/:id",
-      name: "edit-map",
+      path: "/edit/:id",
+      name: "Edit",
       component: () => import("../Views/edit page/EditMap.vue"),
       props: true,
     },

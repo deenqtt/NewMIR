@@ -75,6 +75,9 @@
                   <button @click="deleteMap(map.id)" class="btn btn-danger">
                     Delete
                   </button>
+                  <button @click="editMap(map.id)" class="btn btn-warning">
+                    Edit
+                  </button>
                 </td>
               </tr>
             </tbody>
@@ -192,7 +195,9 @@ import axios from "axios";
 import { useStore } from "vuex";
 import Swal from "sweetalert2";
 const navClient = ref(null);
+import { useRouter } from "vue-router"; // Import useRouter
 const searchTerm = ref("");
+const router = useRouter(); // Initialize the router
 const store = useStore();
 const robots = computed(() => store.state.robots);
 const connectedRobots = computed(() => store.state.connectedRobots);
@@ -358,6 +363,10 @@ const initConnection = () => {
       );
     });
   }
+};
+const editMap = (id) => {
+  // Redirect to Edit page with the map ID
+  router.push({ name: "Edit", params: { id } });
 };
 
 const startMapping = () => {

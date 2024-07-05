@@ -1,5 +1,13 @@
 using System;
 using System.IO;
+using System.Drawing;
+using SixLaborsImage = SixLabors.ImageSharp;
+using SixLaborsImageProcessing = SixLabors.ImageSharp.Processing;
+using SixLaborsImagePixelFormats = SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Formats.Png;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
 
 using System.Linq;
 using System.Text.Json;
@@ -719,109 +727,66 @@ app.MapPost("/maps", async (Map map, FullStackContext db) =>
     return Results.Created($"/maps/{map.Id}", map);
 });
 
-// // Endpoint to save map files
-app.MapPost("/maps/save", async (MapDto mapDto, FullStackContext db) =>
+app.MapGet("/maps/pgm/{id}", async (int id, FullStackContext db) =>
 {
-    string tempDirectory = "./temp"; // Use a directory in the project folder
-    if (!Directory.Exists(tempDirectory))
+    var map = await db.Maps.FindAsync(id);
+    if (map is null)
     {
-        Directory.CreateDirectory(tempDirectory);
+        Console.WriteLine($"Map with ID {id} not found.");
+        return Results.NotFound("Map not found.");
     }
 
-    // Sanitize the name to avoid any illegal characters in the file system
-    string sanitizedMapName = string.Concat(mapDto.Name.Split(Path.GetInvalidFileNameChars()));
-    string mapsDirectory = Path.Combine(tempDirectory, sanitizedMapName);
-    if (!Directory.Exists(mapsDirectory))
+    var pgmFilePath = map.PgmFilePath;
+    if (!System.IO.File.Exists(pgmFilePath))
     {
-        try
-        {
-            Directory.CreateDirectory(mapsDirectory);
-            Console.WriteLine($"Created directory: {mapsDirectory}");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Failed to create directory: {mapsDirectory}");
-            Console.WriteLine($"Error: {ex.Message}\n{ex.StackTrace}");
-            return Results.Problem("Failed to create directory for saving map files.");
-        }
+        Console.WriteLine($"PGM file for map ID {id} not found at path: {pgmFilePath}");
+        return Results.NotFound("PGM file not found.");
     }
 
-    string pgmFilePath = Path.Combine(mapsDirectory, $"{sanitizedMapName}.pgm");
-    string yamlFilePath = Path.Combine(mapsDirectory, $"{sanitizedMapName}.yaml");
+    var pgmBytes = await System.IO.File.ReadAllBytesAsync(pgmFilePath);
+    
+    // Tambahkan log untuk memeriksa header file
+    var header = System.Text.Encoding.ASCII.GetString(pgmBytes, 0, 20);
+    Console.WriteLine($"PGM file header: {header}");
 
-    // Ensure the ROS2 command uses the correct path
-    string command = $"ros2 run nav2_map_server map_saver_cli -f {Path.Combine(mapsDirectory, sanitizedMapName)}";
+    return Results.File(pgmBytes, "image/x-portable-graymap");
+});
+
+app.MapPost("/maps/update/{id}", async (int id, HttpContext context, FullStackContext db) =>
+{
+    var map = await db.Maps.FindAsync(id);
+    if (map == null)
+    {
+        Console.WriteLine($"Map with ID {id} not found.");
+        return Results.NotFound("Map not found.");
+    }
+
+    var form = await context.Request.ReadFormAsync();
+    var file = form.Files["editedPgm"];
+    if (file == null)
+    {
+        Console.WriteLine("No file uploaded.");
+        return Results.BadRequest("No file uploaded.");
+    }
+
+    var pgmFilePath = map.PgmFilePath;
 
     try
     {
-        var process = new Process()
+        using (var stream = new FileStream(pgmFilePath, FileMode.Create))
         {
-            StartInfo = new ProcessStartInfo
-            {
-                FileName = "/bin/bash",
-                Arguments = $"-c \"{command}\"",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-            }
-        };
-
-        process.Start();
-        string output = await process.StandardOutput.ReadToEndAsync();
-        string error = await process.StandardError.ReadToEndAsync();
-        process.WaitForExit();
-
-        if (process.ExitCode != 0)
-        {
-            throw new Exception($"Command failed with exit code {process.ExitCode}: {error}");
+            await file.CopyToAsync(stream);
         }
-
-        Console.WriteLine($"Command Output: {output}");
-        Console.WriteLine($"PGM File Path: {pgmFilePath}");
-        Console.WriteLine($"YAML File Path: {yamlFilePath}");
-
-        if (!File.Exists(pgmFilePath) || !File.Exists(yamlFilePath))
-        {
-            throw new Exception("Failed to save map files.");
-        }
-
-        // Read file contents
-        byte[] pgmFileContent = await File.ReadAllBytesAsync(pgmFilePath);
-        byte[] yamlFileContent = await File.ReadAllBytesAsync(yamlFilePath);
-
-        var map = new Map
-        {
-            Name = mapDto.Name,
-            Site = mapDto.Site,
-            PgmFilePath = pgmFilePath,
-            YamlFilePath = yamlFilePath,
-            Timestamp = DateTime.Now
-        };
-
-        Console.WriteLine($"Map data read successfully.");
-
-        db.Maps.Add(map);
-        int saved = await db.SaveChangesAsync();
-        if (saved <= 0)
-        {
-            throw new Exception("Failed to save map to the database. No data saved.");
-        }
-
-        Console.WriteLine($"Map data saved to database successfully.");
-
-        return Results.Ok(map);
+        Console.WriteLine($"Map ID {id} updated successfully at path: {pgmFilePath}");
+        return Results.Ok("Map updated successfully.");
     }
     catch (Exception ex)
     {
-        // Log the exception message and stack trace
-        Console.WriteLine($"Error: {ex.Message}\n{ex.StackTrace}");
-        return Results.Problem(ex.Message);
+        Console.WriteLine($"Error updating map: {ex.Message}\n{ex.StackTrace}");
+        return Results.Problem("Failed to update map.");
     }
 });
 
-
-// Endpoint to update a map
 app.MapPut("/maps/{id}", async (int id, Map mapUpdate, FullStackContext db) =>
 {
     var map = await db.Maps.FindAsync(id);

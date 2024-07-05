@@ -209,13 +209,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch } from "vue";
+import { ref, onMounted, computed, watch, nextTick } from "vue";
 import axios from "axios";
-import { nextTick } from "vue";
 import Swal from "sweetalert2";
 import { useStore } from "vuex";
 import ROSLIB from "roslib";
-// Define the states for the form card
+
 const isFormCardExpanded = ref(true);
 const navContainer = ref(null);
 const toggleFormCard = () => {
@@ -258,6 +257,16 @@ const endIndex = computed(() =>
 const paginatedMap = computed(() =>
   mapPaths.value.slice(startIndex.value, endIndex.value + 1)
 );
+
+// Watchers to keep localStorage in sync with state
+watch(showTable, (newValue) => {
+  localStorage.setItem("showTable", JSON.stringify(newValue));
+});
+
+watch(showForm, (newValue) => {
+  localStorage.setItem("showForm", JSON.stringify(newValue));
+});
+
 const cancelForm = () => {
   Swal.fire({
     title: "Are you sure?",
@@ -278,12 +287,14 @@ const cancelForm = () => {
     }
   });
 };
+
 const resetForm = () => {
   pathName.value = "";
   posX.value = "";
   posY.value = "";
   orientation.value = "";
 };
+
 const stopping = ref(false);
 const stopLaunch = async () => {
   stopping.value = true; // Set variabel stopping menjadi true untuk menandai bahwa proses penghentian sedang berlangsung
@@ -297,6 +308,7 @@ const stopLaunch = async () => {
     stopping.value = false; // Set variabel stopping kembali ke false setelah proses penghentian selesai atau gagal
   }
 };
+
 const deleteMap = async (id) => {
   try {
     const result = await Swal.fire({
@@ -319,6 +331,7 @@ const deleteMap = async (id) => {
     console.error("Failed to delete map:", error);
   }
 };
+
 const showFormCreate = () => {
   localStorage.setItem("showTable", JSON.stringify(false));
   localStorage.setItem("showForm", JSON.stringify(true));
@@ -328,6 +341,7 @@ const showFormCreate = () => {
     initConnection();
   });
 };
+
 const fetchPaths = async () => {
   try {
     const response = await axios.get("http://localhost:5258/paths");
@@ -338,6 +352,7 @@ const fetchPaths = async () => {
     console.error("Failed to fetch maps:", error);
   }
 };
+
 const fetchMaps = async () => {
   try {
     const response = await axios.get("http://localhost:5258/maps");
@@ -358,10 +373,24 @@ const submitForm = async () => {
     };
     console.log("Submitting form data:", formData);
     const response = await axios.post("http://localhost:5258/paths", formData);
-    if (response.status === 200) {
-      cancelForm();
-      Swal.fire("Success", "Path saved successfully!", "success");
-      // Reset form atau lakukan tindakan lain yang diperlukan setelah berhasil menyimpan
+    if (response.status === 201) {
+      // Periksa status kode 201 untuk Created
+      Swal.fire({
+        title: "Success",
+        text: "Path saved successfully!",
+        icon: "success",
+        confirmButtonText: "OK",
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          // cancelForm();
+          showTable.value = true;
+          showForm.value = false;
+          resetForm();
+          await fetchPaths(); // Perbarui data setelah form disubmit
+        }
+      });
+    } else {
+      throw new Error("Failed to save path");
     }
   } catch (error) {
     console.error("Error saving path:", error);
@@ -393,7 +422,12 @@ const launchMap = async () => {
 
 const enableAutoFill = () => {
   autoFillEnabled.value = true;
-  alert("Click on the map to auto-fill the coordinates");
+  Swal.fire({
+    title: "Auto Fill Enabled",
+    text: "Click on the map to auto-fill the coordinates",
+    icon: "info",
+    confirmButtonText: "OK",
+  });
 };
 
 const autoFillPath = (x, y, orientationValue) => {
@@ -457,7 +491,7 @@ const mapView = (connectedRobot) => {
         topic: "/map",
         withOrientation: false,
       });
-      // Mengubah fungsi click pada peta untuk memproses koordinat dengan cepat dan efisien
+
       viewer.value.scene.addEventListener("click", async (event) => {
         if (autoFillEnabled.value) {
           try {
@@ -469,6 +503,11 @@ const mapView = (connectedRobot) => {
 
             // Simpan koordinat ke dalam variabel yang diperlukan (posX, posY, orientation)
             autoFillPath(coords.x, coords.y, orientationValue);
+            Swal.fire(
+              "Coordinates Auto-filled",
+              `X: ${coords.x}, Y: ${coords.y}, Orientation: ${orientationValue}`,
+              "success"
+            );
           } catch (error) {
             console.error("Error processing click:", error);
             Swal.fire("Error", "Failed to process click event", "error");
