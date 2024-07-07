@@ -207,6 +207,14 @@
               </div>
             </div>
           </div>
+          <div class="battery-status ms-3" :title="`Battery: ${batteryLevel}%`">
+            <div class="battery-icon">
+              <div
+                class="battery-level"
+                :style="{ width: batteryLevel + '%' }"
+              ></div>
+            </div>
+          </div>
         </ul>
       </div>
     </header>
@@ -256,7 +264,7 @@ import { ref, watch, onMounted, toRefs, computed, reactive, toRaw } from "vue";
 import { useRouter } from "vue-router";
 import { useStore } from "vuex";
 import Joystick from "./Joystick.vue";
-
+const batteryLevel = ref(50); // Contoh level baterai
 import Swal from "sweetalert2";
 const showAlert = ref(false);
 const showTerminatedAlert = ref(false);
@@ -588,6 +596,7 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
 }
+
 .form-check-input:checked {
   background-color: #28a745; /* Warna hijau saat tombol dicentang (checked) */
   border-color: #28a745; /* Warna garis pinggir hijau */
@@ -596,9 +605,11 @@ onMounted(() => {
 .form-check-input:checked + .form-check-label {
   color: #28a745; /* Warna teks hijau saat tombol dicentang (checked) */
 }
+
 .form-check p {
   width: 200px;
 }
+
 .form-check {
   margin-left: 20px;
   margin-top: 20px;
@@ -606,6 +617,7 @@ onMounted(() => {
   font-weight: 600;
   width: 200px;
 }
+
 .submenu-item .fa-submenu {
   margin-right: -10px;
 }
@@ -628,27 +640,12 @@ onMounted(() => {
     opacity: 1;
   }
 }
+
 /* CSS untuk menampilkan titik biru di atas ikon lonceng (bell) */
 .notification-container {
   position: relative;
 }
 
-/* CSS untuk menampilkan titik biru di atas ikon lonceng (bell) */
-.notification-dot {
-  position: absolute;
-  width: 10px;
-  height: 10px;
-  background-color: rgb(0, 255, 51);
-  border-radius: 50%;
-  top: -5px;
-  right: -5px;
-}
-
-.notification-container {
-  position: relative;
-}
-
-/* CSS untuk menampilkan titik biru di atas ikon lonceng (bell) */
 .notification-dot {
   position: absolute;
   width: 10px;
@@ -667,18 +664,22 @@ onMounted(() => {
   width: 180px;
   height: 20px;
 }
+
 button {
   border: hidden;
 }
+
 input {
   height: 20px;
   background-color: #d2d2d2;
 }
+
 #navbarSupportedContent {
   gap: 60px;
   margin-left: 100px;
   margin-top: 10px;
 }
+
 .submenu-item.active-submenu {
   h5 {
     position: relative;
@@ -712,7 +713,6 @@ input {
   color: #000000;
 }
 
-// Tambahkan aturan ini untuk menyimpan garis di atas dan bawah submenu saat submenu aktif
 .submenu-item.active-submenu:first-child h5:before,
 .submenu-item.active-submenu:last-child h5:after {
   content: "";
@@ -730,6 +730,7 @@ input {
 .submenu-item.active-submenu:last-child h5:after {
   bottom: -1px;
 }
+
 .submenu-item {
   text-decoration: none;
   color: #000000;
@@ -737,8 +738,8 @@ input {
 
   h5 {
     position: relative;
-    margin-top: 0; /* Remove the margin-top */
-    padding: 5px 20px; /* Adjust the padding as needed */
+    margin-top: 0;
+    padding: 5px 20px;
 
     &:hover {
       &:before,
@@ -748,7 +749,7 @@ input {
         left: 0;
         right: 0;
         height: 1px;
-        background-color: #000000; // Set the color for the underline
+        background-color: #000000;
       }
 
       &:before {
@@ -766,9 +767,11 @@ input {
   margin-left: -50px;
   margin-right: 25px;
 }
+
 .navbar .nav3 .nav-item {
   margin-right: 20px;
 }
+
 .fa-solid .nav1 .nav-item {
   font-size: 30px;
   margin-right: 20px;
@@ -782,7 +785,7 @@ header {
   width: 100%;
   z-index: 1000;
   padding: 10px;
-  border-bottom: 1px solid #000000; /* Tambahkan garis bawah di sini */
+  border-bottom: 1px solid #000000;
 }
 
 nav {
@@ -794,6 +797,7 @@ nav {
   padding: 1rem;
   width: var(--sidebar-width);
   z-index: 899;
+
   .menu-toggle-wrap {
     margin-left: -50px;
     display: flex;
@@ -830,6 +834,7 @@ nav {
   width: 20px;
   height: 50px;
 }
+
 h2 {
   font-family: "Poppins", sans-serif;
   font-size: 20px;
@@ -837,6 +842,7 @@ h2 {
   font-weight: 700;
   margin-top: -20px;
 }
+
 .navbar-brand {
   margin-left: 50px;
   margin-top: 15px;
@@ -844,6 +850,7 @@ h2 {
   font-weight: 700;
   color: #000000;
 }
+
 h5 {
   font-size: 14px;
   font-family: "Poppins", sans-serif;
@@ -853,13 +860,16 @@ h5 {
   margin-top: -30px;
   margin-bottom: 20px;
 }
+
 .submenu-item {
   text-decoration: none;
   color: #000000;
 }
+
 .menu-toggle-wrap button {
   background: #ffffff;
 }
+
 .robot-item {
   display: flex;
   align-items: center;
@@ -873,5 +883,100 @@ h5 {
 
 .select-btn {
   z-index: 1;
+}
+
+.battery-status {
+  display: flex;
+  margin-top: 9px;
+  align-items: center;
+  font-size: 18px;
+  color: #333;
+}
+
+.battery-icon {
+  width: 30px;
+  height: 15px;
+  border: 2px solid #333;
+  border-radius: 3px;
+  position: relative;
+  background-color: #ddd;
+}
+
+.battery-icon::after {
+  content: "";
+  width: 3px;
+  height: 7px;
+  background-color: #b6b0b0;
+  position: absolute;
+  right: -5px;
+  top: 4px;
+  border-radius: 1px;
+}
+
+.battery-level {
+  height: 100%;
+  background-color: #20d426; /* Hijau */
+  transition: width 0.3s ease-in-out;
+}
+
+.battery-level.low {
+  background-color: #f44336; /* Merah */
+}
+
+.battery-status .ms-2 {
+  margin-left: 5px;
+}
+
+/* Responsive CSS */
+@media (max-width: 768px) {
+  header {
+    padding: 5px;
+  }
+
+  .navbar-nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .navbar-brand {
+    margin-left: 10px;
+    font-size: 16px;
+  }
+
+  .nav-item {
+    margin-right: 10px;
+    margin-bottom: 10px;
+  }
+
+  .button {
+    margin: 0 5px;
+    width: 30px;
+    height: 40px;
+  }
+
+  .fa-solid {
+    font-size: 14px;
+  }
+
+  #navbarSupportedContent {
+    gap: 20px;
+    margin-left: 10px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .form-control {
+    width: 150px;
+    height: 30px;
+  }
+
+  .battery-status {
+    font-size: 14px;
+  }
+
+  .battery-icon {
+    width: 20px;
+    height: 10px;
+  }
 }
 </style>

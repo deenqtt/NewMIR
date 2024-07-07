@@ -1,14 +1,9 @@
 <template>
-  <div class="container">
-    <br />
-    <h5 style="color: #000; font-size: 25px">
-      Add <span style="color: #0800ff">Robot</span>
+  <div class="container my-5">
+    <h5 class="text-center mb-4">
+      Add <span class="text-primary">Robot</span>
     </h5>
-    <br />
-    <div
-      class="card bg-light"
-      style="box-shadow: 5px 10px 8px #779bff; border-radius: 10px"
-    >
+    <div class="card bg-light shadow-sm rounded-3">
       <div class="card-body">
         <form @submit.prevent="submitForm">
           <div class="mb-3">
@@ -41,7 +36,7 @@
               required
             />
           </div>
-          <button type="submit" class="btn btn-primary">Add Robot</button>
+          <button type="submit" class="btn btn-primary w-100">Add Robot</button>
         </form>
       </div>
     </div>
@@ -116,4 +111,47 @@ onMounted(() => {
 });
 </script>
 
-<style scoped></style>
+<style scoped>
+.container {
+  max-width: 600px;
+  margin: auto;
+}
+
+h5 {
+  font-size: 1.5rem;
+  font-weight: bold;
+  transition: color 0.3s;
+}
+
+h5 span {
+  color: #007bff;
+}
+
+.card {
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.btn-primary {
+  transition: background-color 0.3s, transform 0.3s;
+}
+
+.btn-primary:hover {
+  background-color: #0056b3;
+  transform: scale(1.05);
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 0 15px;
+  }
+
+  h5 {
+    font-size: 1.25rem;
+  }
+}
+</style>

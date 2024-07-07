@@ -26,7 +26,9 @@
               <td>{{ robot.name }}</td>
               <td>{{ robot.ip }}</td>
               <td>{{ robot.port }}</td>
-              <td>
+              <td
+                :class="isConnected(robot.id) ? 'text-success' : 'text-danger'"
+              >
                 {{ isConnected(robot.id) ? "Connected" : "Disconnected" }}
               </td>
               <td class="text-end">
@@ -39,7 +41,7 @@
         </table>
         <!-- Pagination -->
         <nav aria-label="Page navigation example">
-          <ul class="pagination">
+          <ul class="pagination justify-content-start">
             <li class="page-item" :class="{ disabled: currentPage === 1 }">
               <button class="page-link" @click="prevPage">&laquo;</button>
             </li>
@@ -67,10 +69,11 @@
 </template>
 
 <script setup>
-import { onMounted, ref, reactive, computed } from "vue";
+import { onMounted, ref, computed } from "vue";
 import { useStore } from "vuex";
 import axios from "axios";
 import Swal from "sweetalert2";
+
 const store = useStore();
 const robots = computed(() => store.state.robots);
 const connectedRobots = computed(() => store.state.connectedRobots);
@@ -110,6 +113,7 @@ const nextPage = () => {
 const changePage = (page) => {
   currentPage.value = page;
 };
+
 const deleteRobot = async (id) => {
   try {
     const result = await Swal.fire({
@@ -125,7 +129,7 @@ const deleteRobot = async (id) => {
     if (result.isConfirmed) {
       await axios.delete(`http://localhost:5258/robots/${id}`);
       fetchRobots();
-      Swal.fire("Deleted!", "Your map has been deleted.", "success");
+      Swal.fire("Deleted!", "Your robot has been deleted.", "success");
     }
   } catch (error) {
     Swal.fire("Error", "Failed to delete robot", "error");
@@ -188,7 +192,7 @@ th {
 }
 
 .pagination {
-  justify-content: center;
+  justify-content: start; /* Mengubah posisi pagination ke kiri */
 }
 
 .modal-title {
@@ -241,5 +245,13 @@ th {
   color: #ffffff;
   background-color: #ff0000;
   border-color: #ff0000;
+}
+
+.text-success {
+  color: green !important;
+}
+
+.text-danger {
+  color: red !important;
 }
 </style>

@@ -62,7 +62,6 @@ rclnodejs
                 },
               },
             };
-
             try {
               await actionClient.waitForServer();
               console.log("Action server is available, sending goal.");

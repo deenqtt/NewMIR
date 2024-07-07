@@ -72,10 +72,12 @@
                 <td>{{ map.site }}</td>
                 <td>{{ new Date(map.timestamp).toLocaleString() }}</td>
                 <td class="text-end">
-                  <button @click="deleteMap(map.id)" class="btn btn-danger">
-                    Delete
-                  </button>
-                  <button @click="editMap(map.id)" class="btn btn-warning">
+                  <button @click="deleteMap(map.id)" class="btn">Delete</button>
+                  <button
+                    @click="editMap(map.id)"
+                    class="btn"
+                    style="margin-left: 20px"
+                  >
                     Edit
                   </button>
                 </td>
@@ -156,8 +158,9 @@
                   v-model="map.site"
                   required
                 />
-              </div></div
-          ></transition>
+              </div>
+            </div>
+          </transition>
           <button class="btn-expand" @click.prevent="toggleFormCard">
             <span v-if="isFormCardExpanded" class="material-symbols-outlined">
               collapse_all
@@ -210,17 +213,18 @@ const toggleFormCard = () => {
   isFormCardExpanded.value = !isFormCardExpanded.value;
 };
 const totalPages = computed(() =>
-  Math.ceil(maps.value.length / pageSize.value)
+  Math.ceil(filteredMaps.value.length / pageSize.value)
 );
 const startIndex = computed(() => (currentPage.value - 1) * pageSize.value);
 const endIndex = computed(() =>
-  Math.min(startIndex.value + pageSize.value - 1, maps.value.length - 1)
+  Math.min(startIndex.value + pageSize.value, filteredMaps.value.length)
 );
 const paginatedMap = computed(() =>
-  maps.value.slice(startIndex.value, endIndex.value + 1)
+  filteredMaps.value.slice(startIndex.value, endIndex.value)
 );
 
 const maps = ref([]);
+const filteredMaps = ref([]);
 const map = reactive({
   name: "",
   site: "",
@@ -232,9 +236,8 @@ const cardWidth = ref(700); // Initial width
 const fetchMaps = async () => {
   try {
     const response = await axios.get("http://localhost:5258/maps");
-    maps.value = response.data.filter((map) =>
-      map.name.toLowerCase().includes(searchTerm.value.toLowerCase())
-    );
+    maps.value = response.data;
+    applySearchFilter();
   } catch (error) {
     console.error("Failed to fetch maps:", error);
   }
@@ -299,6 +302,9 @@ const saveMap = async () => {
     if (response.status === 200) {
       fetchMaps();
       resetForm();
+      stopMapping(); // Stop the mapping process after saving
+      localStorage.setItem("Tableshow", JSON.stringify(true));
+      localStorage.setItem("Formshow", JSON.stringify(false));
       Tableshow.value = true; // Set Tableshow to true after successful save
       Formshow.value = false; // Set Formshow to false after successful save
       Swal.fire("Success", "Map saved successfully", "success");
@@ -384,6 +390,28 @@ const startMapping = () => {
     });
 };
 
+const prevPage = () => {
+  if (currentPage.value > 1) {
+    currentPage.value--;
+  }
+};
+
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++;
+  }
+};
+
+const changePage = (page) => {
+  currentPage.value = page;
+};
+
+const applySearchFilter = () => {
+  filteredMaps.value = maps.value.filter((map) =>
+    map.name.toLowerCase().includes(searchTerm.value.toLowerCase())
+  );
+};
+
 onMounted(() => {
   const showTable = localStorage.getItem("Tableshow");
   const showForm = localStorage.getItem("Formshow");
@@ -465,7 +493,8 @@ input:hover {
 .expand-leave-active {
   transition: ease-out 2ms;
 }
-.expand-enter, .expand-leave-to /* .expand-leave-active in <2.1.8 */ {
+.expand-enter,
+.expand-leave-to /* .expand-leave-active in <2.1.8 */ {
   max-height: 40px;
   overflow: hidden;
 }

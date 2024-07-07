@@ -296,8 +296,13 @@ const deleteMission = async (id) => {
 
     if (result.isConfirmed) {
       await axios.delete(`http://localhost:5258/missions/${id}`);
-      fetchMissions();
-      Swal.fire("Deleted!", "Your mission has been deleted.", "success");
+      await fetchMissions(); // Perbarui data misi setelah penghapusan
+      Swal.fire({
+        title: "Deleted!",
+        text: "Your mission has been deleted.",
+        icon: "success",
+        confirmButtonText: "OK",
+      });
     }
   } catch (error) {
     Swal.fire("Error", "Failed to delete mission", "error");
@@ -453,7 +458,7 @@ const createMission = async () => {
         confirmButtonText: "OK",
       }).then(async (result) => {
         if (result.isConfirmed) {
-          cancelForm();
+          stopLaunch();
           TampilTabel.value = true;
           TampilForm.value = false;
           resetForm();

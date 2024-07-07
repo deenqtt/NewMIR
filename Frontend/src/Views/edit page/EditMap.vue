@@ -137,19 +137,35 @@ const draw = (event) => {
 };
 
 const saveEdit = async () => {
+  const mapId = route.params.id;
+  const canvasElement = canvas.value;
+  const dataUrl = canvasElement.toDataURL("image/png");
+  const response = await fetch(dataUrl);
+  const blob = await response.blob();
+
+  const formData = new FormData();
+  formData.append("mapId", mapId);
+  formData.append("editedImage", blob, "edited.png");
+
   try {
-    const editedImage = canvas.value.toDataURL("image/png");
-    const response = await axios.post(
-      `http://localhost:5258/maps/save-edited`,
+    const saveResponse = await axios.post(
+      "http://localhost:5258/maps/save-edited",
+      formData,
       {
-        mapId: route.params.id,
-        editedImage,
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
       }
     );
 
-    if (response.status === 200) {
-      Swal.fire("Success", "Map edited successfully", "success").then(() => {
-        router.push("/maps"); // Ganti dengan rute yang sesuai
+    if (saveResponse.status === 200) {
+      Swal.fire({
+        title: "Success!",
+        text: "Map edited successfully.",
+        icon: "success",
+        confirmButtonText: "OK",
+      }).then(() => {
+        router.push("/maps");
       });
     }
   } catch (error) {

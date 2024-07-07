@@ -473,6 +473,7 @@ const mapView = (connectedRobot) => {
         currentPose.value = message.pose.pose;
         console.log("Current Pose:", currentPose.value);
       });
+
       viewer.value.scene.addEventListener("click", (event) => {
         const mousePosition = viewer.value.scene.globalToRos(
           event.stageX,
@@ -480,7 +481,7 @@ const mapView = (connectedRobot) => {
         );
         console.log("Map clicked at:", mousePosition);
 
-        if (!initializePosition.value) {
+        if (initializePosition.value) {
           ws.value.send(
             JSON.stringify({
               type: "initialize_robot",
@@ -496,14 +497,24 @@ const mapView = (connectedRobot) => {
     });
   }
 };
+
 // Event handler untuk tombol Initialize Robot
 const initializeRobot = () => {
   if (navigatorInstance.value && navigatorInstance.value.initializeRobotMode) {
     navigatorInstance.value.initializeRobotMode();
+    initializePosition.value = true;
   } else {
     console.error("NAV2D.Navigator belum diinisialisasi");
   }
 };
+
+// Watch for initialize position mode to reset after use
+watch(initializePosition, (newValue) => {
+  if (!newValue) {
+    console.log("Resetting initialize position mode");
+    initializePosition.value = false;
+  }
+});
 
 const zoomIn = () => {
   if (viewer.value) {

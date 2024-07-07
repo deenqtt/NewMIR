@@ -382,7 +382,7 @@ const submitForm = async () => {
         confirmButtonText: "OK",
       }).then(async (result) => {
         if (result.isConfirmed) {
-          // cancelForm();
+          stopLaunch();
           showTable.value = true;
           showForm.value = false;
           resetForm();

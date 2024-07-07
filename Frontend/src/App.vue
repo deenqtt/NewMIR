@@ -12,7 +12,7 @@
 
 <script setup>
 import Sidebar from "./components/sidebarpage.vue";
-import SecondSide from "./components/secondside.vue";
+import SecondSide from "./components/NavHead.vue";
 import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 

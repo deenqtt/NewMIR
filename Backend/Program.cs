@@ -8,7 +8,6 @@ using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
-
 using System.Linq;
 using System.Text.Json;
 using Microsoft.AspNetCore.Http;
@@ -21,13 +20,12 @@ using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using System.Text;
 using System.Diagnostics;
+using System.Text.Json.Serialization;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-
-// Configure services
 builder.Services.AddDbContext<FullStackContext>(options =>
     options.UseSqlite("Datasource=./data.db"));
 
@@ -40,9 +38,11 @@ builder.Services.AddCors(o =>
               .AllowAnyHeader());
 });
 
+// Tambahkan ini untuk mengonfigurasi JSON serialization
+builder.Services.AddControllers().AddJsonOptions(x =>
+    x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.Preserve);
 
 var app = builder.Build();
-
 // Auto migration logic
 using (var scope = app.Services.CreateScope())
 {
@@ -243,18 +243,22 @@ app.MapPut("/missions/{id}", async (int id, Mission updatedMission, FullStackCon
     await db.SaveChangesAsync();
     return Results.NoContent();
 });
+
 // Endpoint to delete a mission
+
 app.MapDelete("/missions/{id}", async (int id, FullStackContext db) =>
 {
-    if (await db.Missions.FindAsync(id) is Mission mission)
+    var mission = await db.Missions.FindAsync(id);
+    if (mission == null)
     {
-        db.Missions.Remove(mission);
-        await db.SaveChangesAsync();
-        return Results.Ok(mission);
+        return Results.NotFound();
     }
 
-    return Results.NotFound();
+    db.Missions.Remove(mission);
+    await db.SaveChangesAsync();
+    return Results.Ok(mission);
 });
+
 
 // Endpoint to get all paths
 app.MapGet("/paths", async (FullStackContext db) =>
@@ -754,6 +758,11 @@ app.MapGet("/maps/pgm/{id}", async (int id, FullStackContext db) =>
 
 app.MapPost("/maps/save-edited", async (HttpContext context, FullStackContext db) =>
 {
+    if (!context.Request.HasFormContentType)
+    {
+        return Results.BadRequest("Incorrect Content-Type: expected multipart/form-data");
+    }
+
     var form = await context.Request.ReadFormAsync();
     var mapId = form["mapId"].ToString();
     var editedImage = form.Files["editedImage"];
@@ -1076,6 +1085,7 @@ app.MapGet("/stop_mapping", async context =>
                         await context.Response.WriteAsJsonAsync(new { status = "error", message = ex.Message });
                     }
                 });
+app.MapControllers();
 
 app.UseCors();
 app.Run();
@@ -1094,7 +1104,16 @@ public class FullStackContext : DbContext
     public DbSet<Activitie> Activities {get; set;}//tabel activities
    
     public FullStackContext(DbContextOptions<FullStackContext> options) : base(options) { }
+ protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Mission>()
+            .HasMany(m => m.Waypoints)
+            .WithOne(w => w.Mission)
+            .HasForeignKey(w => w.MissionId)
+            .OnDelete(DeleteBehavior.Cascade);
 
+        base.OnModelCreating(modelBuilder);
+    }
 }
 
 //Table Name
@@ -1139,7 +1158,6 @@ public class MapPath
     public double? PosY { get; set; }
     public double? Orientation { get; set; }
 }
-
 public class Mission
 {
     public int Id { get; set; }
@@ -1154,6 +1172,11 @@ public class Waypoint
     public double X { get; set; }
     public double Y { get; set; }
     public double Orientation { get; set; }
+
+    public int MissionId { get; set; }
+
+    [JsonIgnore] // Tambahkan ini untuk mengabaikan properti saat serialisasi JSON
+    public Mission Mission { get; set; }
 }
 
 public class Footprint
