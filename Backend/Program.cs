@@ -21,6 +21,11 @@ using System.Security.Claims;
 using System.Text;
 using System.Diagnostics;
 using System.Text.Json.Serialization;
+using System.Net.WebSockets;
+using System.Text;
+
+var webSocketClients = new List<WebSocket>();
+
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -48,7 +53,7 @@ using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<FullStackContext>();
     dbContext.Database.Migrate();
-}
+}app.UseWebSockets();
 app.UseCors();
 
 //Endpoint User for method Get all data, Get data use ID, Create or add data user, Update data User, Delete data user
@@ -171,7 +176,7 @@ app.MapPut("/robots/{id}", async (int id, Robot updatedRobot, FullStackContext d
     var robot = await db.Robots.FindAsync(id);
     if (robot is null) return Results.NotFound();
 
-    robot.Name = updatedRobot.Name;
+    // robot.Name = updatedRobotName;
     robot.Ip = updatedRobot.Ip;
     robot.Port = updatedRobot.Port;
 
@@ -630,12 +635,10 @@ app.MapPost("/maps/stop", async (HttpContext context) =>
                     }
                 });
 
-
-app.MapPost("/maps/launch", async (HttpContext context) =>
+app.MapPost("/maps/update-params", async (HttpContext context) =>
 {
     var form = await context.Request.ReadFormAsync();
     var mapName = form["mapName"].ToString();
-    Console.WriteLine($"Received map name: {mapName}");
 
     if (string.IsNullOrEmpty(mapName))
     {
@@ -644,21 +647,58 @@ app.MapPost("/maps/launch", async (HttpContext context) =>
 
     string tempDirectory = Path.Combine(Directory.GetCurrentDirectory(), "temp");
     string mapFilePath = Path.Combine(tempDirectory, mapName, $"{mapName}.yaml");
+    string keepoutYamlFilePath = Path.Combine(tempDirectory, mapName, "keepout.yaml");
 
-    if (!File.Exists(mapFilePath))
+    if (!File.Exists(mapFilePath) || !File.Exists(keepoutYamlFilePath))
     {
         return Results.NotFound("Map file not found.");
     }
 
-    // Stop previous map launch process if running
+    // Update parameters in nav2_params.yaml
+    string paramsFilePath = "/opt/ros/humble/share/nav2_bringup/params/nav2_params.yaml";
+
+    var currentParams = await System.IO.File.ReadAllTextAsync(paramsFilePath);
+    var updatedParams = currentParams
+        .Replace("path/to/your/map.yaml", mapFilePath)
+        .Replace("path/to/your/keepout.yaml", keepoutYamlFilePath);
+
+    await System.IO.File.WriteAllTextAsync(paramsFilePath, updatedParams);
+
+    return Results.Ok("Parameters updated successfully.");
+});
+
+
+bool mapRefreshNeeded = false;
+
+app.MapPost("/maps/launch", async (HttpContext context) =>
+{
+    var form = await context.Request.ReadFormAsync();
+    var mapName = form["mapName"].ToString();
+
+    if (string.IsNullOrEmpty(mapName))
+    {
+        return Results.BadRequest("Map name is required.");
+    }
+
+    string tempDirectory = Path.Combine(Directory.GetCurrentDirectory(), "temp");
+    string mapFilePath = Path.Combine(tempDirectory, mapName, $"{mapName}.yaml");
+    string keepoutYamlFilePath = Path.Combine(tempDirectory, mapName, "keepout.yaml");
+
+    if (!File.Exists(mapFilePath) || !File.Exists(keepoutYamlFilePath))
+    {
+        return Results.NotFound("Map file not found.");
+    }
+
     if (currentProcess != null && !currentProcess.HasExited)
     {
         currentProcess.Kill();
-        Console.WriteLine("Previous map launch process terminated.");
         currentProcess = null;
+        Console.WriteLine("Previous process terminated.");
     }
 
-    string command = $"ros2 launch turtlebot3_navigation2 navigation2.launch.py use_sim_time:=True map:={mapFilePath}";
+    Console.WriteLine($"Launching map: {mapFilePath} with keepout mask: {keepoutYamlFilePath}");
+
+    string command = $"ros2 launch turtlebot3_navigation2 navigation2.launch.py use_sim_time:=True map:={mapFilePath} keepout_mask:={keepoutYamlFilePath}";
 
     var process = new Process()
     {
@@ -675,7 +715,6 @@ app.MapPost("/maps/launch", async (HttpContext context) =>
 
     currentProcess = process;
 
-    // Event handler untuk output proses
     process.OutputDataReceived += (sender, e) =>
     {
         if (!string.IsNullOrEmpty(e.Data))
@@ -684,7 +723,6 @@ app.MapPost("/maps/launch", async (HttpContext context) =>
         }
     };
 
-    // Event handler untuk error output proses
     process.ErrorDataReceived += (sender, e) =>
     {
         if (!string.IsNullOrEmpty(e.Data))
@@ -697,18 +735,36 @@ app.MapPost("/maps/launch", async (HttpContext context) =>
     process.BeginOutputReadLine();
     process.BeginErrorReadLine();
 
-    // Tunggu proses selesai berjalan
     await process.WaitForExitAsync();
 
     if (process.ExitCode != 0)
     {
-        // Handle error using event handlers or other methods, not ReadToEndAsync
+        Console.WriteLine("Failed to launch map.");
         return Results.Problem($"Failed to launch map. Check logs for details.");
     }
 
+    // Signal map refresh
+    mapRefreshNeeded = true;
     Console.WriteLine("Map launched successfully.");
     return Results.Ok("Map launched successfully.");
 });
+
+app.MapPost("/maps/refresh", () =>
+{
+    mapRefreshNeeded = true;
+    return Results.Ok("Map refresh triggered successfully.");
+});
+
+app.MapGet("/maps/refresh-status", () =>
+{
+    if (mapRefreshNeeded)
+    {
+        mapRefreshNeeded = false;
+        return Results.Ok("refresh");
+    }
+    return Results.Ok("no-refresh");
+});
+
 
 app.MapGet("/maps", async (FullStackContext db) =>
 {
@@ -736,23 +792,21 @@ app.MapGet("/maps/pgm/{id}", async (int id, FullStackContext db) =>
     var map = await db.Maps.FindAsync(id);
     if (map is null)
     {
-        Console.WriteLine($"Map with ID {id} not found.");
         return Results.NotFound("Map not found.");
     }
 
-    var pgmFilePath = map.PgmFilePath;
+    var pgmFilePath = Path.Combine(Path.GetDirectoryName(map.PgmFilePath), "keepout.pgm");
     if (!System.IO.File.Exists(pgmFilePath))
     {
-        Console.WriteLine($"PGM file for map ID {id} not found at path: {pgmFilePath}");
+        pgmFilePath = map.PgmFilePath; // Fallback to original PGM file if keepout.pgm doesn't exist
+    }
+
+    if (!System.IO.File.Exists(pgmFilePath))
+    {
         return Results.NotFound("PGM file not found.");
     }
 
     var pgmBytes = await System.IO.File.ReadAllBytesAsync(pgmFilePath);
-    
-    // Tambahkan log untuk memeriksa header file
-    var header = System.Text.Encoding.ASCII.GetString(pgmBytes, 0, 20);
-    Console.WriteLine($"PGM file header: {header}");
-
     return Results.File(pgmBytes, "image/x-portable-graymap");
 });
 
@@ -787,15 +841,17 @@ app.MapPost("/maps/save-edited", async (HttpContext context, FullStackContext db
     try
     {
         var editedImagePath = Path.Combine(tempDirectory, "edited.png");
+        var keepoutPgmFilePath = Path.Combine(tempDirectory, "keepout.pgm");
+        var keepoutYamlFilePath = Path.Combine(tempDirectory, "keepout.yaml");
 
-        // Save the uploaded edited image
+        // Simpan gambar yang diedit
         await using (var stream = new FileStream(editedImagePath, FileMode.Create))
         {
             await editedImage.CopyToAsync(stream);
         }
 
-        // Convert the edited image to PGM format and replace the original PGM file
-        string convertCommand = $"convert {editedImagePath} {map.PgmFilePath}";
+        // Konversi gambar yang diedit ke format PGM dan simpan sebagai keepout.pgm
+        string convertCommand = $"convert {editedImagePath} {keepoutPgmFilePath}";
         var convertProcess = new Process()
         {
             StartInfo = new ProcessStartInfo
@@ -819,9 +875,27 @@ app.MapPost("/maps/save-edited", async (HttpContext context, FullStackContext db
             throw new Exception($"Conversion failed with exit code {convertProcess.ExitCode}: {convertError}");
         }
 
-        Console.WriteLine($"Conversion Output: {convertOutput}");
+        // Baca nilai dari file YAML asli
+        var originalYamlContent = await System.IO.File.ReadAllTextAsync(map.YamlFilePath);
+        var yamlLines = originalYamlContent.Split('\n');
+        var resolutionLine = yamlLines.FirstOrDefault(line => line.StartsWith("resolution:"));
+        var originLine = yamlLines.FirstOrDefault(line => line.StartsWith("origin:"));
+        var resolution = resolutionLine?.Split(':')[1].Trim();
+        var origin = originLine?.Split(':')[1].Trim();
 
-        // Delete the temporary PNG file after conversion
+        // Buat file YAML untuk keepout.pgm dengan jalur relatif yang benar
+        var yamlContent = $@"
+image: keepout.pgm
+mode: trinary
+resolution: {resolution}
+origin: {origin}
+negate: 0
+occupied_thresh: 0.65
+free_thresh: 0.196
+";
+        await System.IO.File.WriteAllTextAsync(keepoutYamlFilePath, yamlContent);
+
+        // Hapus file PNG sementara setelah konversi
         if (System.IO.File.Exists(editedImagePath))
         {
             System.IO.File.Delete(editedImagePath);
@@ -936,7 +1010,6 @@ app.MapPost("/maps/save", async (MapDto mapDto, FullStackContext db) =>
         return Results.Problem(ex.Message);
     }
 });
-
 
 app.MapPut("/maps/{id}", async (int id, Map mapUpdate, FullStackContext db) =>
 {
@@ -1148,7 +1221,6 @@ public class MapDto
     public string Name { get; set; }
     public string Site { get; set; }
 }
-
 public class MapPath
 {
     public int Id { get; set; }

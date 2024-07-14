@@ -1,10 +1,6 @@
 <template>
   <div id="joystick-container">
     <div ref="joystick" id="joystick"></div>
-    <div id="speed-display">
-      <p>Linear Speed: {{ linearSpeed.toFixed(2) }} m/s</p>
-      <p>Angular Speed: {{ angularSpeed.toFixed(2) }} rad/s</p>
-    </div>
   </div>
 </template>
 
@@ -129,17 +125,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-#joystick-container {
-  width: 200px;
-  height: 300px;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  background-color: #333;
-}
-
 #joystick {
   width: 200px;
   height: 200px;

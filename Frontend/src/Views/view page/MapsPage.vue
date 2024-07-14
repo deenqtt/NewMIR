@@ -298,15 +298,19 @@ const saveMap = async () => {
     const response = await axios.post("http://localhost:5258/maps/save", {
       Name: map.name,
       Site: map.site,
+      Resolution: map.resolution,
+      OriginX: map.originX,
+      OriginY: map.originY,
+      OriginZ: map.originZ,
     });
     if (response.status === 200) {
       fetchMaps();
       resetForm();
-      stopMapping(); // Stop the mapping process after saving
+      stopMapping();
       localStorage.setItem("Tableshow", JSON.stringify(true));
       localStorage.setItem("Formshow", JSON.stringify(false));
-      Tableshow.value = true; // Set Tableshow to true after successful save
-      Formshow.value = false; // Set Formshow to false after successful save
+      Tableshow.value = true;
+      Formshow.value = false;
       Swal.fire("Success", "Map saved successfully", "success");
     }
   } catch (error) {

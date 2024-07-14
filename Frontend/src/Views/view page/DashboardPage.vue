@@ -279,6 +279,7 @@ const selectedPath = ref(null);
 const viewer = ref(null);
 const initializePosition = ref(null);
 const currentPose = ref(null);
+const connectedRobot = ref(null);
 const poseListener = ref(null);
 const nav = ref(null);
 const rosSocket = ref(null); // WebSocket for ROS
@@ -310,13 +311,38 @@ const launchMap = async () => {
   try {
     const formData = new FormData();
     formData.append("mapName", selectedMap.value);
-    const response = await axios.post(
-      "http://localhost:5258/maps/launch",
-      formData
-    );
+    await axios.post("http://localhost:5258/maps/update-params", formData);
+    await axios.post("http://localhost:5258/maps/launch", formData);
   } catch (error) {
-    console.error("Error launching map:", error);
+    console.error("Error updating launch file or launching map:", error);
   }
+};
+
+const refreshMap = async () => {
+  try {
+    const response = await axios.post("http://localhost:5258/maps/refresh");
+    if (response.status === 200) {
+      console.log("Map refreshed successfully.");
+      viewer.value.scene.removeAllChildren();
+      mapView(); // Ensure this is defined properly to refresh the map
+    }
+  } catch (error) {
+    console.error("Failed to refresh map:", error);
+  }
+};
+const checkForMapRefresh = () => {
+  setInterval(async () => {
+    try {
+      const response = await axios.get(
+        "http://localhost:5258/maps/refresh-status"
+      );
+      if (response.data === "refresh") {
+        refreshMap();
+      }
+    } catch (error) {
+      console.error("Failed to check map refresh status:", error);
+    }
+  }, 5000); // Polling interval: 5 seconds
 };
 
 const startPath = async () => {
@@ -571,6 +597,7 @@ const stopMission = async () => {
   }
 };
 onMounted(() => {
+  checkForMapRefresh();
   // Ensure mapView is called if a robot is connected
   const connectedRobot = robots.value.find(
     (robot) => connectedRobots.value[robot.id]
