@@ -241,13 +241,17 @@ ROS2D.OccupancyGrid = function (options) {
 
 ROS2D.OccupancyGrid.prototype.__proto__ = createjs.Bitmap.prototype;
 
+let cachedMapData = null; // Variable to cache the latest map data
+let cachedKeepoutData = null; // Variable to cache the latest keepout data
+
 ROS2D.OccupancyGridClient = function (options) {
   var that = this;
   options = options || {};
   var ros = options.ros;
   var topic = options.topic || "/map";
-  this.continuous = options.continuous;
+  this.continuous = options.continuous || false;
   this.rootObject = options.rootObject || new createjs.Container();
+  this.color = options.color || "#FF0000"; // Default color for keepout zones
 
   // current grid that is displayed
   this.currentGrid = new createjs.Shape();
@@ -261,19 +265,62 @@ ROS2D.OccupancyGridClient = function (options) {
   });
 
   let isUpdating = false;
+
   const updateMap = (message) => {
+    console.log("Keepout/Map data received:", message); // Log data yang diterima
+
     if (isUpdating) return;
     isUpdating = true;
+
+    // Cache the received data
+    if (topic === "/map") {
+      cachedMapData = message;
+    } else if (topic === "/keepout_filter_mask") {
+      cachedKeepoutData = message;
+    }
+
     requestAnimationFrame(() => {
-      if (that.currentGrid) {
-        that.rootObject.removeChild(that.currentGrid);
+      try {
+        if (that.currentGrid) {
+          that.rootObject.removeChild(that.currentGrid);
+        }
+
+        console.log("Map resolution:", message.info.resolution);
+        console.log("Map width:", message.info.width);
+        console.log("Map height:", message.info.height);
+        console.log("Map data:", message.data);
+
+        // Check if the data contains only -1 values (indicating unknown space)
+        const allNegative = message.data.every((value) => value === -1);
+        if (allNegative) {
+          console.warn(
+            "Received map data is all -1 (unknown space). Rendering may fail."
+          );
+          that.currentGrid.graphics.beginFill("black").drawRect(0, 0, 1, 1);
+          that.rootObject.addChild(that.currentGrid);
+        } else {
+          // Create the occupancy grid
+          that.currentGrid = new ROS2D.OccupancyGrid({
+            message: message,
+            color: that.color, // Apply custom color if provided
+          });
+          that.rootObject.addChildAt(that.currentGrid, 0);
+          that.emit("change");
+        }
+      } catch (error) {
+        console.error("Error during map rendering:", error);
+      } finally {
+        isUpdating = false;
       }
-      that.currentGrid = new ROS2D.OccupancyGrid({ message: message });
-      that.rootObject.addChildAt(that.currentGrid, 0);
-      that.emit("change");
-      isUpdating = false;
     });
   };
+
+  // If cached data exists, use it instead of waiting for new data
+  if (topic === "/map" && cachedMapData) {
+    updateMap(cachedMapData);
+  } else if (topic === "/keepout_filter_mask" && cachedKeepoutData) {
+    updateMap(cachedKeepoutData);
+  }
 
   rosTopic.subscribe(updateMap);
 };

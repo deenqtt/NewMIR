@@ -1,0 +1,9 @@
+/home/wedman/Documents/newmir/ros2_ws/build/my_project/CMakeFiles/uninstall.dir
+/home/wedman/Documents/newmir/ros2_ws/build/my_project/CMakeFiles/my_project_uninstall.dir
+/home/wedman/Documents/newmir/ros2_ws/build/my_project/CMakeFiles/test.dir
+/home/wedman/Documents/newmir/ros2_ws/build/my_project/CMakeFiles/edit_cache.dir
+/home/wedman/Documents/newmir/ros2_ws/build/my_project/CMakeFiles/rebuild_cache.dir
+/home/wedman/Documents/newmir/ros2_ws/build/my_project/CMakeFiles/list_install_components.dir
+/home/wedman/Documents/newmir/ros2_ws/build/my_project/CMakeFiles/install.dir
+/home/wedman/Documents/newmir/ros2_ws/build/my_project/CMakeFiles/install/local.dir
+/home/wedman/Documents/newmir/ros2_ws/build/my_project/CMakeFiles/install/strip.dir

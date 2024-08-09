@@ -185,6 +185,12 @@ const router = createRouter({
       props: true,
     },
     {
+      path: "/dock/:id",
+      name: "AddDock",
+      component: () => import("../Views/edit page/Docking.vue"),
+      props: true,
+    },
+    {
       path: "/edit-user/:id",
       name: "edit-user",
       component: () => import("../Views/edit page/EditUser.vue"),

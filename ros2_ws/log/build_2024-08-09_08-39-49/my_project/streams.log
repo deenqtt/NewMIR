@@ -1,0 +1,32 @@
+[0.018s] Invoking command in '/home/wedman/Documents/newmir/ros2_ws/build/my_project': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --build /home/wedman/Documents/newmir/ros2_ws/build/my_project -- -j8 -l8
+[0.083s] Invoked command in '/home/wedman/Documents/newmir/ros2_ws/build/my_project' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --build /home/wedman/Documents/newmir/ros2_ws/build/my_project -- -j8 -l8
+[0.120s] Invoking command in '/home/wedman/Documents/newmir/ros2_ws/build/my_project': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --install /home/wedman/Documents/newmir/ros2_ws/build/my_project
+[0.129s] -- Install configuration: ""
+[0.130s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project//launch
+[0.130s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project//launch/navigation2_newmir.launch.py
+[0.130s] -- Installing: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project//launch/cartographer_newmir.launch.py
+[0.130s] -- Installing: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project//launch/occupancy_grid_newmir.launch.py
+[0.130s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project//launch/house_world.launch.py
+[0.130s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project//launch/costmap_filter_info.launch.py
+[0.131s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project//launch/navigation_newmir.launch.py
+[0.131s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project//launch/my_turtlebot3_world.launch.py
+[0.131s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project//launch/bringup.launch.py
+[0.131s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project//param
+[0.131s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project//param/newmir.yaml
+[0.132s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project//param/keepout_params.yaml
+[0.132s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/ament_index/resource_index/package_run_dependencies/my_project
+[0.132s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/ament_index/resource_index/parent_prefix_path/my_project
+[0.132s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/environment/ament_prefix_path.sh
+[0.132s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/environment/ament_prefix_path.dsv
+[0.132s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/environment/path.sh
+[0.133s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/environment/path.dsv
+[0.133s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/local_setup.bash
+[0.133s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/local_setup.sh
+[0.133s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/local_setup.zsh
+[0.133s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/local_setup.dsv
+[0.133s] -- Installing: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/package.dsv
+[0.134s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/ament_index/resource_index/packages/my_project
+[0.134s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/cmake/my_projectConfig.cmake
+[0.134s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/cmake/my_projectConfig-version.cmake
+[0.134s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/package.xml
+[0.136s] Invoked command in '/home/wedman/Documents/newmir/ros2_ws/build/my_project' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --install /home/wedman/Documents/newmir/ros2_ws/build/my_project

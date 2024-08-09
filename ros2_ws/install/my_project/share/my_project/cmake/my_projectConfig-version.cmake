@@ -1,0 +1,1 @@
+/home/wedman/Documents/newmir/ros2_ws/build/my_project/ament_cmake_core/my_projectConfig-version.cmake

@@ -39,6 +39,29 @@ namespace Backend.Migrations
                     b.ToTable("Activities");
                 });
 
+            modelBuilder.Entity("Dock", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("MapId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<float>("Orientation")
+                        .HasColumnType("REAL");
+
+                    b.Property<float>("PosX")
+                        .HasColumnType("REAL");
+
+                    b.Property<float>("PosY")
+                        .HasColumnType("REAL");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Docks");
+                });
+
             modelBuilder.Entity("Error", b =>
                 {
                     b.Property<int>("Id")

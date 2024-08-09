@@ -1,0 +1,1 @@
+/home/wedman/Documents/newmir/ros2_ws/src/my_project/launch/navigation_newmir.launch.py

@@ -80,6 +80,13 @@
                   >
                     Edit
                   </button>
+                  <button
+                    @click="addDock(map.id)"
+                    class="btn"
+                    style="margin-left: 20px"
+                  >
+                    Add Dock
+                  </button>
                 </td>
               </tr>
             </tbody>
@@ -197,6 +204,7 @@ import {
 import axios from "axios";
 import { useStore } from "vuex";
 import Swal from "sweetalert2";
+
 const navClient = ref(null);
 import { useRouter } from "vue-router"; // Import useRouter
 const searchTerm = ref("");
@@ -378,7 +386,34 @@ const editMap = (id) => {
   // Redirect to Edit page with the map ID
   router.push({ name: "Edit", params: { id } });
 };
+const addDock = async (id) => {
+  router.push({ name: "AddDock", params: { id } });
+  // Dapatkan nama map berdasarkan ID
+  try {
+    const response = await axios.get(`http://localhost:5258/maps/${id}`);
+    const mapName = response.data.name;
+    await launchMap(mapName);
+  } catch (error) {
+    console.error("Failed to fetch map name:", error);
+    Swal.fire("Error", "Failed to fetch map name", "error");
+  }
+};
 
+// Fungsi untuk meluncurkan map berdasarkan nama
+const launchMap = async (mapName) => {
+  try {
+    const formData = new FormData();
+    formData.append("mapName", mapName);
+    const response = await axios.post(
+      "http://localhost:5258/maps/launch",
+      formData
+    );
+    console.log(response.data);
+  } catch (error) {
+    console.error("Failed to launch map:", error);
+    Swal.fire("Error", "Failed to launch map", "error");
+  }
+};
 const startMapping = () => {
   fetch("http://localhost:5258/start_mapping")
     .then((response) => {

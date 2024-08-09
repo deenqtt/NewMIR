@@ -635,40 +635,8 @@ app.MapPost("/maps/stop", async (HttpContext context) =>
                     }
                 });
 
-app.MapPost("/maps/update-params", async (HttpContext context) =>
-{
-    var form = await context.Request.ReadFormAsync();
-    var mapName = form["mapName"].ToString();
-
-    if (string.IsNullOrEmpty(mapName))
-    {
-        return Results.BadRequest("Map name is required.");
-    }
-
-    string tempDirectory = Path.Combine(Directory.GetCurrentDirectory(), "temp");
-    string mapFilePath = Path.Combine(tempDirectory, mapName, $"{mapName}.yaml");
-    string keepoutYamlFilePath = Path.Combine(tempDirectory, mapName, "keepout.yaml");
-
-    if (!File.Exists(mapFilePath) || !File.Exists(keepoutYamlFilePath))
-    {
-        return Results.NotFound("Map file not found.");
-    }
-
-    // Update parameters in nav2_params.yaml
-    string paramsFilePath = "/opt/ros/humble/share/nav2_bringup/params/nav2_params.yaml";
-
-    var currentParams = await System.IO.File.ReadAllTextAsync(paramsFilePath);
-    var updatedParams = currentParams
-        .Replace("path/to/your/map.yaml", mapFilePath)
-        .Replace("path/to/your/keepout.yaml", keepoutYamlFilePath);
-
-    await System.IO.File.WriteAllTextAsync(paramsFilePath, updatedParams);
-
-    return Results.Ok("Parameters updated successfully.");
-});
-
-
 bool mapRefreshNeeded = false;
+
 
 app.MapPost("/maps/launch", async (HttpContext context) =>
 {
@@ -686,9 +654,10 @@ app.MapPost("/maps/launch", async (HttpContext context) =>
 
     if (!File.Exists(mapFilePath) || !File.Exists(keepoutYamlFilePath))
     {
-        return Results.NotFound("Map file not found.");
+        return Results.NotFound("Map or keepout file not found.");
     }
 
+    // Terminate any existing process
     if (currentProcess != null && !currentProcess.HasExited)
     {
         currentProcess.Kill();
@@ -696,16 +665,15 @@ app.MapPost("/maps/launch", async (HttpContext context) =>
         Console.WriteLine("Previous process terminated.");
     }
 
-    Console.WriteLine($"Launching map: {mapFilePath} with keepout mask: {keepoutYamlFilePath}");
+    // Launch the navigation map
+    Console.WriteLine($"Launching map: {mapFilePath}");
 
-    string command = $"ros2 launch turtlebot3_navigation2 navigation2.launch.py use_sim_time:=True map:={mapFilePath} keepout_mask:={keepoutYamlFilePath}";
-
-    var process = new Process()
+    currentProcess = new Process()
     {
         StartInfo = new ProcessStartInfo
         {
             FileName = "/bin/bash",
-            Arguments = $"-c \"{command}\"",
+            Arguments = $"-c \"ros2 launch my_project navigation2_newmir.launch.py use_sim_time:=True map:={mapFilePath}\"",
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
@@ -713,9 +681,7 @@ app.MapPost("/maps/launch", async (HttpContext context) =>
         }
     };
 
-    currentProcess = process;
-
-    process.OutputDataReceived += (sender, e) =>
+    currentProcess.OutputDataReceived += (sender, e) =>
     {
         if (!string.IsNullOrEmpty(e.Data))
         {
@@ -723,7 +689,7 @@ app.MapPost("/maps/launch", async (HttpContext context) =>
         }
     };
 
-    process.ErrorDataReceived += (sender, e) =>
+    currentProcess.ErrorDataReceived += (sender, e) =>
     {
         if (!string.IsNullOrEmpty(e.Data))
         {
@@ -731,28 +697,62 @@ app.MapPost("/maps/launch", async (HttpContext context) =>
         }
     };
 
-    process.Start();
-    process.BeginOutputReadLine();
-    process.BeginErrorReadLine();
+    currentProcess.Start();
+    currentProcess.BeginOutputReadLine();
+    currentProcess.BeginErrorReadLine();
 
-    await process.WaitForExitAsync();
+    // Wait for the map process to start properly
+    await Task.Delay(5000); // Delay for 5 seconds
 
-    if (process.ExitCode != 0)
+    // Launch the keepout costmap
+    Console.WriteLine($"Launching keepout with mask: {keepoutYamlFilePath}");
+
+    var keepoutProcess = new Process()
     {
-        Console.WriteLine("Failed to launch map.");
-        return Results.Problem($"Failed to launch map. Check logs for details.");
-    }
+        StartInfo = new ProcessStartInfo
+        {
+            FileName = "/bin/bash",
+            Arguments = $"-c \"ros2 launch my_project costmap_filter_info.launch.py params_file:=$HOME/Documents/newmir/ros2_ws/src/my_project/param/keepout_params.yaml mask:={keepoutYamlFilePath}\"",
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        }
+    };
 
-    // Signal map refresh
+    keepoutProcess.OutputDataReceived += (sender, e) =>
+    {
+        if (!string.IsNullOrEmpty(e.Data))
+        {
+            Console.WriteLine($"[ROS2 Keepout Output]: {e.Data}");
+        }
+    };
+
+    keepoutProcess.ErrorDataReceived += (sender, e) =>
+    {
+        if (!string.IsNullOrEmpty(e.Data))
+        {
+            Console.WriteLine($"[ROS2 Keepout Error]: {e.Data}");
+        }
+    };
+
+    keepoutProcess.Start();
+    keepoutProcess.BeginOutputReadLine();
+    keepoutProcess.BeginErrorReadLine();
+
+    // Wait for both processes to exit
+    await Task.WhenAll(currentProcess.WaitForExitAsync(), keepoutProcess.WaitForExitAsync());
+
     mapRefreshNeeded = true;
-    Console.WriteLine("Map launched successfully.");
-    return Results.Ok("Map launched successfully.");
+    Console.WriteLine("Map and keepout launched successfully.");
+    return Results.Ok("Map and keepout launched successfully.");
 });
 
-app.MapPost("/maps/refresh", () =>
+app.MapPost("/maps/refresh", (HttpContext context) =>
 {
     mapRefreshNeeded = true;
-    return Results.Ok("Map refresh triggered successfully.");
+    Console.WriteLine("Map refresh requested.");
+    return Results.Ok();
 });
 
 app.MapGet("/maps/refresh-status", () =>
@@ -764,7 +764,6 @@ app.MapGet("/maps/refresh-status", () =>
     }
     return Results.Ok("no-refresh");
 });
-
 
 app.MapGet("/maps", async (FullStackContext db) =>
 {
@@ -1158,6 +1157,77 @@ app.MapGet("/stop_mapping", async context =>
                         await context.Response.WriteAsJsonAsync(new { status = "error", message = ex.Message });
                     }
                 });
+
+app.MapGet("/docks/{mapId}", async (int mapId, FullStackContext db) =>
+{
+    var docks = await db.Docks.Where(d => d.MapId == mapId).ToListAsync();
+    if (docks == null || docks.Count == 0)
+    {
+        return Results.NotFound("No docks found for this map.");
+    }
+    return Results.Ok(docks);
+});
+
+// Update save-dock to ensure only one dock per map
+app.MapPost("/maps/save-dock", async (HttpContext context, FullStackContext db) =>
+{
+    var dockData = await context.Request.ReadFromJsonAsync<DockData>();
+    if (dockData == null)
+    {
+        return Results.BadRequest("Invalid dock data.");
+    }
+
+    var map = await db.Maps.FindAsync(dockData.MapId);
+    if (map == null)
+    {
+        return Results.NotFound("Map not found.");
+    }
+
+    var existingDock = await db.Docks.FirstOrDefaultAsync(d => d.MapId == dockData.MapId);
+    if (existingDock != null)
+    {
+        db.Docks.Remove(existingDock);
+        await db.SaveChangesAsync();
+    }
+
+    var dock = new Dock
+    {
+        MapId = dockData.MapId,
+        PosX = dockData.PosX,
+        PosY = dockData.PosY,
+        Orientation = dockData.Orientation
+    };
+    db.Docks.Add(dock);
+    await db.SaveChangesAsync();
+
+    Console.WriteLine($"Saved Dock Data: Id={dock.Id}, MapId={dock.MapId}, PosX={dock.PosX}, PosY={dock.PosY}, Orientation={dock.Orientation}");
+
+    return Results.Ok("Dock coordinates saved successfully.");
+});
+
+// Endpoint to get dock by map ID
+app.MapGet("/maps/get-dock/{mapId:int}", async (int mapId, FullStackContext db) =>
+{
+    var dock = await db.Docks.FirstOrDefaultAsync(d => d.MapId == mapId);
+    if (dock == null)
+    {
+        return Results.NotFound("Dock not found for the specified map.");
+    }
+    return Results.Ok(dock);
+});
+
+// Endpoint to delete dock by ID
+app.MapDelete("/maps/delete-dock/{dockId:int}", async (int dockId, FullStackContext db) =>
+{
+    var dock = await db.Docks.FindAsync(dockId);
+    if (dock == null)
+    {
+        return Results.NotFound("Dock not found.");
+    }
+    db.Docks.Remove(dock);
+    await db.SaveChangesAsync();
+    return Results.Ok("Dock deleted successfully.");
+});
 app.MapControllers();
 
 app.UseCors();
@@ -1175,7 +1245,7 @@ public class FullStackContext : DbContext
     public DbSet<Modul> Moduls { get; set; } //Table Modul
     public DbSet<Error> Errors {get; set;}//table error
     public DbSet<Activitie> Activities {get; set;}//tabel activities
-   
+   public DbSet<Dock> Docks { get; set; } //Table Dock
     public FullStackContext(DbContextOptions<FullStackContext> options) : base(options) { }
  protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -1284,4 +1354,22 @@ public class Activitie
     public DateTime ExpiryTime { get; set; } // Add ExpiryTime property
 }
 
+// DTO (Data Transfer Object)
+public class DockData
+{
+    public int MapId { get; set; }
+    public float PosX { get; set; }
+    public float PosY { get; set; }
+    public float Orientation { get; set; }
+}
+
+// Entity (Entitas yang disimpan dalam database)
+public class Dock
+{
+    public int Id { get; set; }
+    public int MapId { get; set; }
+    public float PosX { get; set; }
+    public float PosY { get; set; }
+    public float Orientation { get; set; }
+}
 

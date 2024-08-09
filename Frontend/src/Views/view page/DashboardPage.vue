@@ -158,6 +158,14 @@
             data-toggle="modal"
             data-target="#exampleModalCenter"
           ></span>
+          <span class="separator"></span>
+          <span
+            class="material-symbols-outlined"
+            @click="refreshMapView"
+            data-bs-toggle="tooltip"
+            title="Refresh Map"
+            >refresh</span
+          >
         </div>
 
         <div class="right-icons d-flex align-items-center">
@@ -311,38 +319,14 @@ const launchMap = async () => {
   try {
     const formData = new FormData();
     formData.append("mapName", selectedMap.value);
-    await axios.post("http://localhost:5258/maps/update-params", formData);
     await axios.post("http://localhost:5258/maps/launch", formData);
   } catch (error) {
     console.error("Error updating launch file or launching map:", error);
   }
 };
 
-const refreshMap = async () => {
-  try {
-    const response = await axios.post("http://localhost:5258/maps/refresh");
-    if (response.status === 200) {
-      console.log("Map refreshed successfully.");
-      viewer.value.scene.removeAllChildren();
-      mapView(); // Ensure this is defined properly to refresh the map
-    }
-  } catch (error) {
-    console.error("Failed to refresh map:", error);
-  }
-};
-const checkForMapRefresh = () => {
-  setInterval(async () => {
-    try {
-      const response = await axios.get(
-        "http://localhost:5258/maps/refresh-status"
-      );
-      if (response.data === "refresh") {
-        refreshMap();
-      }
-    } catch (error) {
-      console.error("Failed to check map refresh status:", error);
-    }
-  }, 5000); // Polling interval: 5 seconds
+const refreshMapView = () => {
+  refreshMap();
 };
 
 const startPath = async () => {
@@ -453,7 +437,16 @@ const setSpeed = () => {
   }
 };
 
+let isRefreshed = false; // Track if the map has been refreshed
+let initializedPose = null; // Store the initialized pose
+
+// Function to initialize and update the map view
+
+// Function to initialize and update the map view
 const mapView = (connectedRobot) => {
+  const useKeepout = isRefreshed; // Use keepout data only if the map has been refreshed
+  console.log(`mapView called with useKeepout: ${useKeepout}`);
+
   if (rosSocket.value && rosSocket.value.readyState === WebSocket.OPEN) {
     nextTick(() => {
       const navElement = document.getElementById("nav");
@@ -461,11 +454,17 @@ const mapView = (connectedRobot) => {
         console.error("Element with ID 'nav' not found in DOM.");
         return;
       }
-      viewer.value = new ROS2D.Viewer({
-        divID: "nav",
-        width: navContainer.value.clientWidth,
-        height: 550,
-      });
+
+      // Initialize the viewer only if it doesn't exist
+      if (!viewer.value) {
+        viewer.value = new ROS2D.Viewer({
+          divID: "nav",
+          width: navContainer.value.clientWidth,
+          height: 550,
+        });
+      }
+
+      const topic = useKeepout ? "/keepout_filter_mask" : "/map";
 
       navClient.value = new NAV2D.OccupancyGridClientNav({
         ros: new ROSLIB.Ros({
@@ -474,7 +473,7 @@ const mapView = (connectedRobot) => {
         rootObject: viewer.value.scene,
         viewer: viewer.value,
         serverName: "/navigate_to_pose",
-        topic: "/map",
+        topic: topic, // Use keepout_filter_mask or map based on the parameter
       });
 
       navigatorInstance.value = new NAV2D.Navigator({
@@ -500,6 +499,20 @@ const mapView = (connectedRobot) => {
         console.log("Current Pose:", currentPose.value);
       });
 
+      // Jika inisialisasi sudah dilakukan sebelumnya, terapkan kembali posisi inisialisasi
+      if (initializedPose) {
+        navigatorInstance.value.initializeRobotMode();
+        ws.value.send(
+          JSON.stringify({
+            type: "initialize_robot",
+            x: initializedPose.position.x,
+            y: initializedPose.position.y,
+            z: initializedPose.orientation.z,
+            w: initializedPose.orientation.w,
+          })
+        );
+      }
+
       viewer.value.scene.addEventListener("click", (event) => {
         const mousePosition = viewer.value.scene.globalToRos(
           event.stageX,
@@ -517,10 +530,124 @@ const mapView = (connectedRobot) => {
               w: 1.0,
             })
           );
+          // Simpan posisi inisialisasi
+          initializedPose = {
+            position: { x: mousePosition.x, y: mousePosition.y },
+            orientation: { z: 0.0, w: 1.0 },
+          };
         }
       });
-      console.log("Nav setup complete");
+      console.log(`Nav setup complete using topic: ${topic}`);
     });
+  }
+};
+
+// Function to clear the map view without switching to keepout data
+const clearMap = async () => {
+  try {
+    console.log("Clearing map...");
+
+    // Clear existing map elements
+    if (viewer.value) {
+      console.log("Removing existing map elements.");
+      viewer.value.scene.removeAllChildren();
+    }
+
+    // Close existing ROS connections
+    if (navClient.value && navClient.value.ros) {
+      console.log("Closing existing navClient ROS connection.");
+      navClient.value.ros.close();
+      navClient.value = null;
+    }
+    if (navigatorInstance.value && navigatorInstance.value.ros) {
+      console.log("Closing existing navigatorInstance ROS connection.");
+      navigatorInstance.value.ros.close();
+      navigatorInstance.value = null;
+    }
+    if (rosSocket.value) {
+      console.log("Closing existing ROS2 WebSocket connection.");
+      rosSocket.value.close();
+      rosSocket.value = null;
+    }
+    if (ws.value) {
+      console.log("Closing existing Goal WebSocket connection.");
+      ws.value.close();
+      ws.value = null;
+    }
+
+    // Ensure cleanup is complete
+    await new Promise((resolve) => setTimeout(resolve, 500)); // Delay to ensure closure
+
+    console.log("Map cleared successfully.");
+  } catch (error) {
+    console.error("Error during map clear:", error);
+  }
+};
+
+// Function to refresh the map and switch to keepout data
+const refreshMap = async () => {
+  try {
+    console.log("Refreshing map...");
+
+    // Clear map elements and connections
+    await clearMap();
+
+    // Set isRefreshed to true to switch to keepout data
+    isRefreshed = true;
+
+    // Reinitialize connection and viewer
+    console.log("Reinitializing connection and map viewer.");
+    await initConnection();
+
+    // Fetch new map data and update the view using keepout data
+    const connectedRobot = robots.value.find(
+      (robot) => connectedRobots.value[robot.id]
+    );
+
+    if (connectedRobot) {
+      console.log("Updating map view with keepout data.");
+      mapView(connectedRobot); // Use keepout data for the map view
+    } else {
+      console.error("No connected robot found for map view update.");
+    }
+
+    console.log("Map refreshed successfully.");
+  } catch (error) {
+    console.error("Error during map refresh:", error);
+  }
+};
+
+// Function to stop the current mission and reset isRefreshed flag
+const stopMission = async () => {
+  stopping.value = true; // Mark the stopping process as ongoing
+  try {
+    // Send request to stop the ongoing map launch process
+    const response = await axios.post("http://localhost:5258/maps/stop");
+    alert(response.data);
+
+    // Reset isRefreshed to false so the next launch uses the /map topic again
+    isRefreshed = false;
+
+    // Clear the map view to return to the standard map
+    await clearMap();
+
+    // Reinitialize connection and viewer using the standard map
+    await initConnection();
+
+    const connectedRobot = robots.value.find(
+      (robot) => connectedRobots.value[robot.id]
+    );
+
+    if (connectedRobot) {
+      console.log("Updating map view with standard map data.");
+      mapView(connectedRobot); // Use standard map data
+    } else {
+      console.error("No connected robot found for map view update.");
+    }
+  } catch (error) {
+    console.error("Error stopping map launch:", error);
+  } finally {
+    stopping.value = false; // Reset the stopping flag after the process completes
   }
 };
 
@@ -584,20 +711,7 @@ const moveRight = () => {
   }
 };
 
-const stopMission = async () => {
-  stopping.value = true; // Set variabel stopping menjadi true untuk menandai bahwa proses penghentian sedang berlangsung
-  try {
-    // Kirim permintaan untuk menghentikan proses peluncuran map yang sedang berlangsung
-    const response = await axios.post("http://localhost:5258/maps/stop");
-    alert(response.data);
-  } catch (error) {
-    console.error("Error stopping map launch:", error);
-  } finally {
-    stopping.value = false; // Set variabel stopping kembali ke false setelah proses penghentian selesai atau gagal
-  }
-};
 onMounted(() => {
-  checkForMapRefresh();
   // Ensure mapView is called if a robot is connected
   const connectedRobot = robots.value.find(
     (robot) => connectedRobots.value[robot.id]

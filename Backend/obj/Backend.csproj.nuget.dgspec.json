@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "/home/wedman/Documents/NewMIR/Backend/Backend.csproj": {}
+    "/home/wedman/Documents/newmir/Backend/Backend.csproj": {}
   },
   "projects": {
-    "/home/wedman/Documents/NewMIR/Backend/Backend.csproj": {
+    "/home/wedman/Documents/newmir/Backend/Backend.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/home/wedman/Documents/NewMIR/Backend/Backend.csproj",
+        "projectUniqueName": "/home/wedman/Documents/newmir/Backend/Backend.csproj",
         "projectName": "Backend",
-        "projectPath": "/home/wedman/Documents/NewMIR/Backend/Backend.csproj",
+        "projectPath": "/home/wedman/Documents/newmir/Backend/Backend.csproj",
         "packagesPath": "/home/wedman/.nuget/packages/",
-        "outputPath": "/home/wedman/Documents/NewMIR/Backend/obj/",
+        "outputPath": "/home/wedman/Documents/newmir/Backend/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "/home/wedman/.nuget/NuGet/NuGet.Config"

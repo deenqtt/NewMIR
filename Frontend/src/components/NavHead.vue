@@ -207,13 +207,19 @@
               </div>
             </div>
           </div>
+
           <div class="battery-status ms-3" :title="`Battery: ${batteryLevel}%`">
             <div class="battery-icon">
               <div
                 class="battery-level"
                 :style="{ width: batteryLevel + '%' }"
+                :class="batteryLevelClass"
               ></div>
             </div>
+            <!-- Tambahkan Tombol Refresh -->
+            <button class="btn btn-sm ml-2" @click="refreshBatteryData">
+              <i class="fa-solid fa-sync" title="Refresh Battery Data"></i>
+            </button>
           </div>
         </ul>
       </div>
@@ -260,11 +266,29 @@
 
 <script setup>
 import axios from "axios";
-import { ref, watch, onMounted, toRefs, computed, reactive, toRaw } from "vue";
+import {
+  ref,
+  watch,
+  onMounted,
+  toRefs,
+  onUnmounted,
+  computed,
+  reactive,
+  toRaw,
+} from "vue";
 import { useRouter } from "vue-router";
 import { useStore } from "vuex";
 import Joystick from "./Joystick.vue";
-const batteryLevel = ref(50); // Contoh level baterai
+const batteryLevel = ref(50); // Initibatteryeve
+
+watch(batteryLevel, (newLevel) => {
+  console.log(`Battery level changed to: ${newLevel}%`);
+});
+
+const batteryLevelClass = computed(() => {
+  return batteryLevel.value < 20 ? "low" : "";
+});
+
 import Swal from "sweetalert2";
 const showAlert = ref(false);
 const showTerminatedAlert = ref(false);
@@ -285,8 +309,48 @@ const joystickVisible = ref(false);
 const missions = ref([]); // List of missions
 const dropdownOpen1 = ref(false);
 const connected = ref(false);
-const rosSocket = ref(null); // WebSocket for ROS
+const rosSocket = ref(null); // WebSocket for RO
 const isPlaying = ref(false);
+const wsBattery = ref(null);
+const connectBatteryWebSocket = () => {
+  const connectWebSocket = () => {
+    wsBattery.value = new WebSocket(`ws://localhost:3000`);
+
+    wsBattery.value.onopen = () => {
+      console.log("Battery WebSocket connection established");
+    };
+
+    wsBattery.value.onerror = (error) => {
+      console.error("Battery WebSocket error: ", error);
+    };
+
+    wsBattery.value.onmessage = (event) => {
+      const msg = JSON.parse(event.data);
+      console.log("Received battery message:", msg);
+      if (msg.type === "battery_update") {
+        batteryLevel.value = msg.level;
+        console.log(`Battery level updated: ${msg.level}%`);
+      }
+    };
+
+    wsBattery.value.onclose = () => {
+      console.log("Battery WebSocket connection closed");
+      setTimeout(connectWebSocket, 5000); // Retry connection after 5 seconds
+    };
+  };
+
+  connectWebSocket();
+};
+
+// Tambahkan metode ini
+const refreshBatteryData = () => {
+  if (ws.value) {
+    ws.value.close();
+  }
+  connectBatteryWebSocket();
+  console.log("Battery data refresh requested");
+};
+
 const toggleMission = () => {
   if (!selectedMission.value) {
     alert("Please select a mission");
@@ -299,6 +363,7 @@ const toggleMission = () => {
     startMission();
   }
 };
+
 const initConnection = () => {
   // Check if there is any connected robot
   const connectedRobot = robots.value.find(
@@ -321,10 +386,10 @@ const initConnection = () => {
   ws.value = new WebSocket(`ws://localhost:3000`);
   ws.value.onopen = () => {
     console.log("Goal WebSocket connection established");
-    connected.value = true; // Add this line
+    connected.value = true;
   };
   ws.value.onerror = (error) => {
-    console.error("Goal WebSocket error: ", error); // Add error handling for goal WebSocket
+    console.error("Goal WebSocket error: ", error);
     connected.value = false;
     setTimeout(initConnection, 5000); // Retry connection after 5 seconds
   };
@@ -334,13 +399,19 @@ const initConnection = () => {
   };
   ws.value.onmessage = (event) => {
     const msg = JSON.parse(event.data);
+    console.log("Received message:", msg); // Log received message for debugging
     if (msg.type === "position_reached") {
       message.value = `Reached ${msg.position}`;
+      console.log(`Reached position: ${msg.position}`); // Log position reached
       if (msg.position === "start" || msg.position === "goal") {
         showContinueButton = true;
       }
     } else if (msg.type === "goal_error") {
       message.value = `Error: ${msg.error}`;
+      console.error(`Goal error: ${msg.error}`); // Log goal error
+    } else if (msg.type === "battery_update") {
+      batteryLevel.value = msg.level;
+      console.log(`Battery level updated: ${msg.level}%`); // Log battery update
     }
   };
 };
@@ -353,7 +424,11 @@ const startMission = () => {
 
   const mission = {
     type: "start_mission",
-    waypoints: toRaw(selectedMission.value.waypoints),
+    waypoints: selectedMission.value.waypoints.map((wp) => ({
+      x: wp.x,
+      y: wp.y,
+      orientation: wp.orientation,
+    })),
   };
 
   if (ws.value && ws.value.readyState === WebSocket.OPEN && connected.value) {
@@ -362,7 +437,7 @@ const startMission = () => {
     isPlaying.value = true;
 
     // Tampilkan waypoint di console log
-    toRaw(selectedMission.value.waypoints).forEach((waypoint, index) => {
+    selectedMission.value.waypoints.forEach((waypoint, index) => {
       console.log(
         `Waypoint ${index + 1}: X=${waypoint.x}, Y=${waypoint.y}, Orientation=${
           waypoint.orientation
@@ -379,6 +454,7 @@ const startMission = () => {
     console.error("WebSocket not connected");
   }
 };
+
 const stopMission = () => {
   if (ws.value && ws.value.readyState === WebSocket.OPEN && connected.value) {
     ws.value.send(JSON.stringify({ type: "stop_mission" }));
@@ -583,10 +659,16 @@ onMounted(() => {
     $('[data-toggle="tooltip"]').tooltip();
   });
   console.log("Component mounted");
+  connectBatteryWebSocket();
   updatePageTitle();
   fetchRobots();
   fetchMissions();
   initConnection();
+});
+onUnmounted(() => {
+  if (ws.value) {
+    ws.value.close();
+  }
 });
 </script>
 

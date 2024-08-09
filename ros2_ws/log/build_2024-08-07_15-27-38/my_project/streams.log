@@ -1,0 +1,52 @@
+[0.013s] Invoking command in '/home/wedman/Documents/newmir/ros2_ws/build/my_project': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake /home/wedman/Documents/newmir/ros2_ws/src/my_project -DCMAKE_INSTALL_PREFIX=/home/wedman/Documents/newmir/ros2_ws/install/my_project
+[0.154s] -- The C compiler identification is GNU 11.4.0
+[0.269s] -- The CXX compiler identification is GNU 11.4.0
+[0.281s] -- Detecting C compiler ABI info
+[0.361s] -- Detecting C compiler ABI info - done
+[0.374s] -- Check for working C compiler: /usr/bin/cc - skipped
+[0.375s] -- Detecting C compile features
+[0.376s] -- Detecting C compile features - done
+[0.380s] -- Detecting CXX compiler ABI info
+[0.473s] -- Detecting CXX compiler ABI info - done
+[0.481s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[0.481s] -- Detecting CXX compile features
+[0.482s] -- Detecting CXX compile features - done
+[0.495s] -- Found ament_cmake: 1.3.9 (/opt/ros/humble/share/ament_cmake/cmake)
+[0.662s] -- Found Python3: /usr/bin/python3 (found version "3.10.12") found components: Interpreter 
+[0.790s] -- Found ament_lint_auto: 0.12.11 (/opt/ros/humble/share/ament_lint_auto/cmake)
+[0.880s] -- Added test 'copyright' to check source files copyright and LICENSE
+[0.883s] -- Added test 'flake8' to check Python code syntax and style conventions
+[0.884s] -- Added test 'lint_cmake' to check CMake code style
+[0.885s] -- Added test 'pep257' to check Python code against some of the docstring style conventions in PEP 257
+[0.888s] -- Added test 'xmllint' to check XML markup files
+[0.891s] -- Configuring done
+[0.897s] -- Generating done
+[0.898s] -- Build files have been written to: /home/wedman/Documents/newmir/ros2_ws/build/my_project
+[0.905s] Invoked command in '/home/wedman/Documents/newmir/ros2_ws/build/my_project' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake /home/wedman/Documents/newmir/ros2_ws/src/my_project -DCMAKE_INSTALL_PREFIX=/home/wedman/Documents/newmir/ros2_ws/install/my_project
+[0.907s] Invoking command in '/home/wedman/Documents/newmir/ros2_ws/build/my_project': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --build /home/wedman/Documents/newmir/ros2_ws/build/my_project -- -j8 -l8
+[0.947s] Invoked command in '/home/wedman/Documents/newmir/ros2_ws/build/my_project' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --build /home/wedman/Documents/newmir/ros2_ws/build/my_project -- -j8 -l8
+[0.978s] Invoking command in '/home/wedman/Documents/newmir/ros2_ws/build/my_project': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --install /home/wedman/Documents/newmir/ros2_ws/build/my_project
+[0.985s] -- Install configuration: ""
+[0.985s] -- Installing: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project//launch
+[0.986s] -- Installing: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project//launch/navigation2_newmir.launch.py
+[0.986s] -- Installing: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project//launch/costmap_filter_info.launch.py
+[0.986s] -- Installing: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project//launch/bringup.launch.py
+[0.987s] -- Installing: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project//param
+[0.987s] -- Installing: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project//param/newmir.yaml
+[0.987s] -- Installing: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project//param/keepout_params.yaml
+[0.987s] -- Installing: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/ament_index/resource_index/package_run_dependencies/my_project
+[0.987s] -- Installing: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/ament_index/resource_index/parent_prefix_path/my_project
+[0.987s] -- Installing: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/environment/ament_prefix_path.sh
+[0.987s] -- Installing: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/environment/ament_prefix_path.dsv
+[0.988s] -- Installing: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/environment/path.sh
+[0.988s] -- Installing: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/environment/path.dsv
+[0.988s] -- Installing: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/local_setup.bash
+[0.988s] -- Installing: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/local_setup.sh
+[0.988s] -- Installing: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/local_setup.zsh
+[0.989s] -- Installing: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/local_setup.dsv
+[0.989s] -- Installing: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/package.dsv
+[0.989s] -- Installing: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/ament_index/resource_index/packages/my_project
+[0.989s] -- Installing: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/cmake/my_projectConfig.cmake
+[0.990s] -- Installing: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/cmake/my_projectConfig-version.cmake
+[0.990s] -- Installing: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/package.xml
+[0.992s] Invoked command in '/home/wedman/Documents/newmir/ros2_ws/build/my_project' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --install /home/wedman/Documents/newmir/ros2_ws/build/my_project

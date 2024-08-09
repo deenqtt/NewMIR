@@ -34,6 +34,14 @@
             step="1"
             class="ml-3"
           />
+          <button
+            @click="setTool('docking')"
+            class="btn btn-light"
+            data-toggle="tooltip"
+            title="Add Docking Coordinate"
+          >
+            <i class="fa-solid fa-map-pin"></i>
+          </button>
         </div>
       </div>
       <div class="card-body">
@@ -43,6 +51,7 @@
           @mouseup="stopDrawing"
           @mouseleave="stopDrawing"
           @mousemove="draw"
+          @click="addDockingCoordinate"
           style="border: 1px solid #ccc; width: 100%; height: auto"
         ></canvas>
       </div>
@@ -64,6 +73,7 @@ const isDrawing = ref(false);
 const tool = ref("draw");
 const penSize = ref(2); // Ukuran pensil
 const eraserSize = ref(5); // Ukuran penghapus
+const dockingCoordinates = ref([]); // Array to store docking coordinates
 
 const loadPGM = async () => {
   try {
@@ -114,11 +124,13 @@ const setTool = (selectedTool) => {
 };
 
 const startDrawing = (event) => {
+  if (tool.value !== "draw" && tool.value !== "erase") return; // Ignore if tool is not draw or erase
   isDrawing.value = true;
   draw(event); // Start drawing immediately
 };
 
 const stopDrawing = () => {
+  if (tool.value !== "draw" && tool.value !== "erase") return; // Ignore if tool is not draw or erase
   isDrawing.value = false;
 };
 
@@ -136,6 +148,19 @@ const draw = (event) => {
   context.value.fillRect(x - size / 2, y - size / 2, size, size);
 };
 
+const addDockingCoordinate = (event) => {
+  if (tool.value !== "docking") return;
+
+  const rect = canvas.value.getBoundingClientRect();
+  const scaleX = canvas.value.width / rect.width;
+  const scaleY = canvas.value.height / rect.height;
+  const x = (event.clientX - rect.left) * scaleX;
+  const y = (event.clientY - rect.top) * scaleY;
+
+  dockingCoordinates.value.push({ x, y });
+  console.log("Docking coordinate added:", { x, y });
+};
+
 const saveEdit = async () => {
   const mapId = route.params.id;
   const canvasElement = canvas.value;
@@ -146,6 +171,12 @@ const saveEdit = async () => {
   const formData = new FormData();
   formData.append("mapId", mapId);
   formData.append("editedImage", blob, "edited.png");
+
+  // Add docking coordinates to formData
+  dockingCoordinates.value.forEach((coord, index) => {
+    formData.append(`dockingCoordinates[${index}][x]`, coord.x);
+    formData.append(`dockingCoordinates[${index}][y]`, coord.y);
+  });
 
   try {
     const saveResponse = await axios.post(

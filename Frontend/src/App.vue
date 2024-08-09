@@ -1,7 +1,7 @@
 <template>
   <div class="app" :class="{ 'with-sidebar': showSidebar }">
     <!-- sidebar -->
-    <Sidebar v-if="showSidebar" />
+    <Sidebar v-if="showSidebar" style="display: fixed" />
     <SecondSide v-if="showSidebar" />
     <main :style="{ background: isExemptedPage ? '100%' : 'auto' }">
       <!-- Content -->
@@ -50,14 +50,6 @@ const height = ref("auto"); // define the height property
 
 main {
   background: #ffffff;
-}
-
-button {
-  cursor: pointer;
-  appearance: none;
-  border: none;
-  outline: none;
-  background: none;
 }
 
 .app {

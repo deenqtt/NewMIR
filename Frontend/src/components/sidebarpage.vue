@@ -1,7 +1,10 @@
 <template>
   <div class="sidebar">
-    <button class="hamburger-button" @click="toggleSidebar">
-      <!-- Icon bars di sini -->
+    <button
+      class="hamburger-button"
+      style="color: aliceblue"
+      @click="toggleSidebar"
+    >
       <i class="fa-solid fa-bars"></i>
     </button>
     <aside
@@ -9,7 +12,6 @@
         is_mobile ? 'is-mobile' : ''
       }`"
     >
-      <!-- Tombol untuk menyembunyikan sidebar -->
       <button v-if="is_expanded" class="close-button" @click="toggleSidebar">
         <i class="fa-solid fa-times"></i>
       </button>
@@ -29,8 +31,8 @@
               data-toggle="tooltip"
               data-bs-placement="right"
               title="Dashboard"
-            >
-            </lord-icon>
+            ></lord-icon>
+            <span class="text" v-if="is_expanded">Dashboard</span>
           </router-link>
         </div>
         <router-link
@@ -46,10 +48,9 @@
             data-toggle="tooltip"
             data-bs-placement="right"
             title="Setup"
-          >
-          </lord-icon>
+          ></lord-icon>
+          <span class="text" v-if="is_expanded">Setup</span>
         </router-link>
-        <!-- Sisipkan event mouseenter dan mouseleave untuk menampilkan dan menyembunyikan tooltip -->
         <router-link
           to="/activity"
           class="button"
@@ -64,9 +65,8 @@
             data-toggle="tooltip"
             data-bs-placement="right"
             title="Monitoring"
-          >
-          </lord-icon>
-          <!-- Menampilkan titik hijau hanya jika ada notifikasi yang belum dibaca -->
+          ></lord-icon>
+          <span class="text" v-if="is_expanded">Monitoring</span>
           <span class="notification-dot" v-if="hasNewInputError"></span>
         </router-link>
         <router-link
@@ -82,8 +82,8 @@
             data-toggle="tooltip"
             data-bs-placement="right"
             title="System"
-          >
-          </lord-icon>
+          ></lord-icon>
+          <span class="text" v-if="is_expanded">System</span>
         </router-link>
       </div>
 
@@ -103,8 +103,8 @@
             data-toggle="tooltip"
             data-bs-placement="right"
             title="Help"
-          >
-          </lord-icon>
+          ></lord-icon>
+          <span class="text" v-if="is_expanded">Help</span>
         </router-link>
         <button class="tombol" @click="logout">
           <span
@@ -113,6 +113,7 @@
             data-bs-placement="right"
             title="Logout"
           ></span>
+          <span class="text" v-if="is_expanded">Logout</span>
         </button>
       </div>
       <div v-if="loading" class="loading-overlay">
@@ -133,54 +134,33 @@ const loading = ref(false);
 const router = useRouter();
 
 const hasNewInputError = computed(() => {
-  // Ambil nilai properti unreadNotifications dari store
   const unreadNotifications = store.state.unreadNotifications;
-  // Tentukan apakah ada notifikasi yang belum dibaca
   return unreadNotifications > 0;
 });
 const handleNotificationClick = () => {
-  // Mengosongkan jumlah notifikasi yang belum dibaca saat ikon diklik
   store.commit("markAllNotificationsAsRead");
-
-  // Menyembunyikan ikon notifikasi saat diklik
   hasNewInputError.value = false;
 };
 
-const ToggleMenu = () => {
-  is_expanded.value = !is_expanded.value;
-};
 const logout = async () => {
-  // Menampilkan animasi loading dan menerapkan efek blur pada latar belakang
   loading.value = true;
-  document.body.style.overflow = "hidden"; // Menghilangkan scroll pada latar belakang
-
-  // Menunda navigasi ke halaman berikutnya selama 3 detik
+  document.body.style.overflow = "hidden";
   await new Promise((resolve) => setTimeout(resolve, 3000));
-
-  // Membersihkan status autentikasi dari localStorage menggunakan fungsi dari auth.js
   removeAuthToken();
-
-  // Mengarahkan pengguna kembali ke halaman login setelah selesai logout
   router.push({ name: "Login" });
 };
-const onButtonHover = () => {
-  console.log("Button hovered");
-};
-// Definisikan variabel is_expanded dan is_mobile
-const is_expanded = ref(false);
-const is_mobile = ref(window.innerWidth <= 660); // Inisialisasi dengan nilai berdasarkan ukuran layar saat ini
 
-// Definisikan fungsi untuk menampilkan/menyembunyikan sidebar pada tampilan ponsel
+const is_expanded = ref(false);
+const is_mobile = ref(window.innerWidth <= 660);
+
 const toggleSidebar = () => {
   is_expanded.value = !is_expanded.value;
 };
 
-// Pastikan fungsi ini dipanggil ketika ukuran jendela berubah
 const checkWindowSize = () => {
-  is_mobile.value = window.innerWidth <= 660; // Atur batas ukuran untuk menentukan apakah itu ponsel atau bukan
+  is_mobile.value = window.innerWidth <= 660;
 };
 
-// Dipanggil saat komponen dimuat
 onMounted(() => {
   checkWindowSize();
   window.addEventListener("resize", checkWindowSize);
@@ -192,16 +172,15 @@ onBeforeUnmount(() => {
 </script>
 
 <style lang="scss" scoped>
-/* Atur tampilan latar belakang saat sidebar diperluas pada tampilan ponsel */
 .is-expanded .background-overlay {
-  display: block; /* Tampilkan latar belakang saat sidebar diperluas */
+  display: block;
 }
 
 .close-button {
-  position: fixed; /* Tetapkan posisi tetap agar tombol close selalu terlihat */
-  top: 20px; /* Atur posisi ke bawah dari atas */
-  left: 220px; /* Atur posisi ke kiri dari kiri */
-  z-index: 9999; /* Tetapkan z-index tinggi untuk menempatkan tombol di atas elemen lain */
+  position: fixed;
+  top: 20px;
+  left: 220px;
+  z-index: 9999;
   background: none;
   border: none;
   cursor: pointer;
@@ -209,20 +188,19 @@ onBeforeUnmount(() => {
 }
 
 .is-expanded {
-  width: 240px; /* Atur lebar sidebar yang diperluas */
-  transition: width 0.3s ease; /* Tambahkan transisi agar perubahan lebar menjadi mulus */
+  width: 240px;
+  transition: width 0.3s ease;
 }
 
-/* Atur tampilan untuk tombol close saat sidebar diperluas */
 .is-expanded .close-button {
-  display: block; /* Tampilkan tombol close saat sidebar diperluas */
+  display: block;
 }
 
 .hamburger-button {
-  position: fixed; /* Tetapkan posisi tetap agar tombol hamburger selalu terlihat */
-  display: none; /* Atur posisi ke bawah dari atas */
-  left: 10px; /* Atur posisi ke kiri dari kiri */
-  z-index: 9999; /* Tetapkan z-index tinggi untuk menempatkan tombol di atas elemen lain */
+  position: fixed;
+  display: none;
+  left: 10px;
+  z-index: 9999;
   background: none;
   border: none;
   cursor: pointer;
@@ -232,66 +210,61 @@ onBeforeUnmount(() => {
   color: #ffff;
 }
 
-/* Gaya untuk latar belakang blur/gelap */
 .background-overlay {
-  position: fixed; /* Tetapkan posisi absolut agar latar belakang menutupi seluruh layar */
-  top: 0; /* Tempatkan latar belakang di bagian atas */
-  left: 0; /* Tempatkan latar belakang di sisi kiri */
-  width: 100%; /* Atur lebar latar belakang */
-  height: 100%; /* Atur tinggi latar belakang */
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   background-color: rgba(0, 0, 0, 0.5);
-  z-index: 99909; /* Tetapkan z-index sedikit lebih rendah dari sidebar agar tidak menutupinya */
-  display: none; /* Sembunyikan secara default */
+  z-index: 99909;
+  display: none;
 }
-/* Gaya untuk ikon bars */
 .fa-bars {
-  color: #000000; /* Ubah warna ikon menjadi putih */
+  color: #000000;
 }
-/* Atur tampilan hamburger untuk tampilan ponsel */
+
 @media screen and (max-width: 660px) {
   .hamburger-button {
-    display: block; /* Tampilkan tombol hamburger pada tampilan ponsel */
+    display: block;
   }
   .close-button {
-    display: none; /* Sembunyikan tombol close secara default */
+    display: none;
   }
-  /* Sembunyikan sidebar saat tombol hamburger tidak aktif */
   .is-mobile {
     display: none;
   }
   aside {
-    position: absolute; /* Tetapkan posisi absolut agar sidebar berada di atas komponen lain */
-    top: 0; /* Tempatkan sidebar di bagian atas */
-    left: 0; /* Tempatkan sidebar di sisi kiri */
+    position: absolute;
+    top: 0;
+    left: 0;
     bottom: 0;
-    z-index: 999999; /* Biarkan sidebar menutupi seluruh ketinggian layar */
+    z-index: 999999;
   }
-  /* Atur tampilan sidebar saat tombol hamburger aktif */
   .is-mobile.is-expanded {
     display: block;
   }
 }
-/* Gaya untuk elemen animasi loading */
 .loading-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.5); /* Latar belakang semi-transparan */
+  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 9999; /* Pastikan di atas konten lainnya */
+  z-index: 9999;
 }
 
 .loading-spinner {
-  border: 8px solid #f3f3f3; /* Light grey */
-  border-top: 8px solid #3498db; /* Blue */
+  border: 8px solid #f3f3f3;
+  border-top: 8px solid #3498db;
   border-radius: 50%;
   width: 50px;
   height: 50px;
-  animation: spin 1s linear infinite; /* Animasi putar */
+  animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
@@ -303,7 +276,6 @@ onBeforeUnmount(() => {
   }
 }
 
-/* Efek blur untuk latar belakang saat animasi loading aktif */
 .loading-overlay + .is-expanded {
   filter: blur(5px);
 }
@@ -333,7 +305,6 @@ aside {
   display: flex;
   flex-direction: column;
   background-color: #000000;
-
   width: calc(2rem + 32px);
   overflow: hidden;
   height: 100vh;
@@ -363,9 +334,8 @@ aside {
       display: flex;
       align-items: center;
       text-decoration: none;
-      position: relative; /* Menjadikan posisi relatif untuk tooltip */
-
-      padding: 1rem 1rem; /* Adjust padding for vertical and horizontal spacing */
+      position: relative;
+      padding: 1rem 1rem;
 
       .fa-solid {
         font-size: 1.5rem;
@@ -378,7 +348,6 @@ aside {
         background-color: var(--dark-alt);
       }
 
-      /* Tampilan tooltip */
       &::after {
         content: attr(data-tooltip);
         position: absolute;
@@ -419,12 +388,11 @@ aside {
 
 .menu {
   align-content: center;
-  border-right: 3px solid transparent; /* Initially transparent border */
+  border-right: 3px solid transparent;
 }
 
-/* Add style for the active menu item */
 .menu .button.active {
-  border-right-color: var(--primary); /* Set border color on active state */
+  border-right-color: var(--primary);
 }
 .menu {
   align-content: center;
@@ -435,7 +403,7 @@ aside {
   align-items: center;
   text-decoration: none;
   padding: 1rem 1rem;
-  position: relative; /* Add position relative to allow absolute positioning of the tooltip */
+  position: relative;
 
   .fa-solid {
     font-size: 1.5rem;
@@ -448,7 +416,6 @@ aside {
     background-color: var(--dark-alt);
   }
 
-  // Add style for the active menu item
   &.active {
     border-right: 3px solid var(--primary);
   }
@@ -474,7 +441,7 @@ aside {
 }
 .menu .button .fa-solid {
   font-size: 1.5rem;
-  color: #000; /* Ubah warna menjadi hitam */
+  color: #000;
   transition: 0.2s ease-in-out;
   margin-left: 2px;
 }

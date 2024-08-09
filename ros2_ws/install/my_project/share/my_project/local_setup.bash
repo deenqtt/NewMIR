@@ -1,0 +1,1 @@
+/home/wedman/Documents/newmir/ros2_ws/build/my_project/ament_cmake_environment_hooks/local_setup.bash

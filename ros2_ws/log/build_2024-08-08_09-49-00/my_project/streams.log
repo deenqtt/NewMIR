@@ -1,0 +1,30 @@
+[0.015s] Invoking command in '/home/wedman/Documents/newmir/ros2_ws/build/my_project': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --build /home/wedman/Documents/newmir/ros2_ws/build/my_project -- -j8 -l8
+[0.050s] Invoked command in '/home/wedman/Documents/newmir/ros2_ws/build/my_project' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --build /home/wedman/Documents/newmir/ros2_ws/build/my_project -- -j8 -l8
+[0.080s] Invoking command in '/home/wedman/Documents/newmir/ros2_ws/build/my_project': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --install /home/wedman/Documents/newmir/ros2_ws/build/my_project
+[0.088s] -- Install configuration: ""
+[0.088s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project//launch
+[0.088s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project//launch/navigation2_newmir.launch.py
+[0.088s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project//launch/house_world.launch.py
+[0.088s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project//launch/costmap_filter_info.launch.py
+[0.089s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project//launch/navigation_newmir.launch.py
+[0.089s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project//launch/my_turtlebot3_world.launch.py
+[0.089s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project//launch/bringup.launch.py
+[0.089s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project//param
+[0.089s] -- Installing: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project//param/newmir.yaml
+[0.089s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project//param/keepout_params.yaml
+[0.090s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/ament_index/resource_index/package_run_dependencies/my_project
+[0.090s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/ament_index/resource_index/parent_prefix_path/my_project
+[0.090s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/environment/ament_prefix_path.sh
+[0.090s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/environment/ament_prefix_path.dsv
+[0.090s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/environment/path.sh
+[0.090s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/environment/path.dsv
+[0.090s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/local_setup.bash
+[0.091s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/local_setup.sh
+[0.091s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/local_setup.zsh
+[0.091s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/local_setup.dsv
+[0.091s] -- Installing: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/package.dsv
+[0.092s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/ament_index/resource_index/packages/my_project
+[0.092s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/cmake/my_projectConfig.cmake
+[0.092s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/cmake/my_projectConfig-version.cmake
+[0.093s] -- Up-to-date: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/package.xml
+[0.093s] Invoked command in '/home/wedman/Documents/newmir/ros2_ws/build/my_project' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --install /home/wedman/Documents/newmir/ros2_ws/build/my_project

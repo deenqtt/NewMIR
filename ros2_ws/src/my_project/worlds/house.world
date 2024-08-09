@@ -1,0 +1,104 @@
+<?xml version="1.0" ?>
+<sdf version="1.6">
+  <world name="house_world">
+    <include>
+      <uri>model://sun</uri>
+    </include>
+    <include>
+      <uri>model://ground_plane</uri>
+    </include>
+    <!-- Dinding rumah -->
+    <model name="wall_1">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>10 0.1 3</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>10 0.1 3</size>
+            </box>
+            <material>
+              <ambient>1 1 1 1</ambient>
+            </material>
+          </geometry>
+        </visual>
+        <pose>0 5 1.5 0 0 0</pose>
+      </link>
+    </model>
+    <model name="wall_2">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>10 0.1 3</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>10 0.1 3</size>
+            </box>
+            <material>
+              <ambient>1 1 1 1</ambient>
+            </material>
+          </geometry>
+        </visual>
+        <pose>0 -5 1.5 0 0 0</pose>
+      </link>
+    </model>
+    <model name="wall_3">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>0.1 10 3</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.1 10 3</size>
+            </box>
+            <material>
+              <ambient>1 1 1 1</ambient>
+            </material>
+          </geometry>
+        </visual>
+        <pose>5 0 1.5 0 0 0</pose>
+      </link>
+    </model>
+    <model name="wall_4">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>0.1 10 3</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.1 10 3</size>
+            </box>
+            <material>
+              <ambient>1 1 1 1</ambient>
+            </material>
+          </geometry>
+        </visual>
+        <pose>-5 0 1.5 0 0 0</pose>
+      </link>
+    </model>
+  </world>
+</sdf>

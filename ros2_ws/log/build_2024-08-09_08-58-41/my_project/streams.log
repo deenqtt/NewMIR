@@ -1,0 +1,48 @@
+[0.013s] Invoking command in '/home/wedman/Documents/newmir/ros2_ws/build/my_project': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --build /home/wedman/Documents/newmir/ros2_ws/build/my_project -- -j8 -l8
+[0.035s] -- Found ament_cmake: 1.3.10 (/opt/ros/humble/share/ament_cmake/cmake)
+[0.148s] -- Override CMake install command with custom implementation using symlinks instead of copying resources
+[0.156s] -- Found ament_lint_auto: 0.12.11 (/opt/ros/humble/share/ament_lint_auto/cmake)
+[0.225s] -- Added test 'copyright' to check source files copyright and LICENSE
+[0.232s] -- Added test 'cppcheck' to perform static code analysis on C / C++ code
+[0.232s] -- Configured cppcheck include dirs: 
+[0.232s] -- Configured cppcheck exclude dirs and/or files: 
+[0.233s] -- Added test 'flake8' to check Python code syntax and style conventions
+[0.235s] -- Added test 'lint_cmake' to check CMake code style
+[0.236s] -- Added test 'pep257' to check Python code against some of the docstring style conventions in PEP 257
+[0.241s] -- Added test 'uncrustify' to check C / C++ code style
+[0.242s] -- Configured uncrustify additional arguments: 
+[0.242s] -- Added test 'xmllint' to check XML markup files
+[0.244s] -- Configuring done
+[0.248s] -- Generating done
+[0.250s] -- Build files have been written to: /home/wedman/Documents/newmir/ros2_ws/build/my_project
+[0.271s] Invoked command in '/home/wedman/Documents/newmir/ros2_ws/build/my_project' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --build /home/wedman/Documents/newmir/ros2_ws/build/my_project -- -j8 -l8
+[0.305s] Invoking command in '/home/wedman/Documents/newmir/ros2_ws/build/my_project': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --install /home/wedman/Documents/newmir/ros2_ws/build/my_project
+[0.312s] -- Install configuration: ""
+[0.313s] -- Execute custom install script
+[0.313s] -- Up-to-date symlink: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project//launch/bringup.launch.py
+[0.314s] -- Up-to-date symlink: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project//launch/cartographer_newmir.launch.py
+[0.314s] -- Up-to-date symlink: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project//launch/costmap_filter_info.launch.py
+[0.314s] -- Up-to-date symlink: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project//launch/house_world.launch.py
+[0.314s] -- Up-to-date symlink: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project//launch/my_turtlebot3_world.launch.py
+[0.314s] -- Up-to-date symlink: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project//launch/navigation2_newmir.launch.py
+[0.315s] -- Up-to-date symlink: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project//launch/navigation_newmir.launch.py
+[0.315s] -- Up-to-date symlink: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project//launch/occupancy_grid_newmir.launch.py
+[0.315s] -- Up-to-date symlink: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project//param/keepout_params.yaml
+[0.316s] -- Up-to-date symlink: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project//param/newmir.yaml
+[0.316s] -- Symlinking: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/config/cartographer_config.lua
+[0.326s] -- Up-to-date symlink: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/ament_index/resource_index/package_run_dependencies/my_project
+[0.326s] -- Up-to-date symlink: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/ament_index/resource_index/parent_prefix_path/my_project
+[0.327s] -- Up-to-date symlink: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/environment/ament_prefix_path.sh
+[0.327s] -- Up-to-date symlink: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/environment/ament_prefix_path.dsv
+[0.327s] -- Up-to-date symlink: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/environment/path.sh
+[0.328s] -- Up-to-date symlink: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/environment/path.dsv
+[0.328s] -- Up-to-date symlink: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/local_setup.bash
+[0.328s] -- Up-to-date symlink: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/local_setup.sh
+[0.329s] -- Up-to-date symlink: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/local_setup.zsh
+[0.329s] -- Up-to-date symlink: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/local_setup.dsv
+[0.329s] -- Symlinking: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/package.dsv
+[0.339s] -- Up-to-date symlink: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/ament_index/resource_index/packages/my_project
+[0.339s] -- Up-to-date symlink: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/cmake/my_projectConfig.cmake
+[0.340s] -- Up-to-date symlink: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/cmake/my_projectConfig-version.cmake
+[0.340s] -- Up-to-date symlink: /home/wedman/Documents/newmir/ros2_ws/install/my_project/share/my_project/package.xml
+[0.343s] Invoked command in '/home/wedman/Documents/newmir/ros2_ws/build/my_project' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --install /home/wedman/Documents/newmir/ros2_ws/build/my_project
